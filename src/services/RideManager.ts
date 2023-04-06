@@ -1,7 +1,8 @@
-import {BaseManager} from "./BaseManager";
-import {PlayerManager} from "./PlayerManager";
+import {BaseManager} from "@services//BaseManager";
+import {PlayerManager} from "@services//PlayerManager";
+import {ACTION_TYPE} from "@lib/enum";
 
-type NetworkRide = Ride;
+type MapRide = Ride;
 
 type StorageRide = {
     id: number
@@ -9,9 +10,11 @@ type StorageRide = {
     previousTotalProfit: number
 };
 
-interface RideManagerOptions {
+export type PluginRide = Omit<MapRide & StorageRide, "lifecycleFlags" | "departFlags" | "minimumWaitingTime" | "maximumWaitingTime" | "vehicles" | "vehicleColours" | "buildDate" | "age" | "inspectionInterval" | "downtime" | "liftHillSpeed" | "minLiftHillSpeed" | "maxLiftHillSpeed">;
+
+type RideManagerOptions = {
     playerManager: PlayerManager
-}
+};
 
 
 export class RideManager extends BaseManager {
@@ -23,75 +26,66 @@ export class RideManager extends BaseManager {
     }
 
     override init(): void {
-        this.subscribeActionExecute();
+        this.watchForActions();
     }
 
-    subscribeActionExecute(): void {
-        context.subscribe('action.execute', ({player, action, result, args}) => {
-            if (player === -1) {
+    watchForActions(): void {
+        context.subscribe('action.execute', (event) => {
+            const {player, action} = event;
+            if (PlayerManager.isServerPlayer(player)) {
                 return;
             }
 
-            if (action === 'ridecreate' &&
-                'ride' in result) {
-                this.createRide(player, <number>result['ride']);
+            if (action === ACTION_TYPE.RIDE_CREATE) {
+               this.handleRideCreateAction(event);
+               return;
             }
 
-            if (action === 'ridedemolish' &&
-                'ride' in args) {
-                this.demolishRide(<number>args['ride']);
+            if (action === ACTION_TYPE.RIDE_DEMOLISH) {
+                this.handleRideDemolishAction(event);
+                return;
             }
-
-
         });
     }
 
-    getRide(id: number): Omit<NetworkRide & StorageRide, "lifecycleFlags" | "departFlags" | "minimumWaitingTime" | "maximumWaitingTime" | "vehicles" | "vehicleColours" | "buildDate" | "age" | "inspectionInterval" | "downtime" | "liftHillSpeed" | "minLiftHillSpeed" | "maxLiftHillSpeed"> | null {
+    handleRideCreateAction({player, result}: GameActionEventArgs): void {
+        if(!('ride' in result)) {
+            return;
+        }
+        this.createRide(player, <number>result['ride']);
+    }
+
+    handleRideDemolishAction({args}: GameActionEventArgs): void {
+        if(!('ride' in args)) {
+            return;
+        }
+        this.demolishRide(<number>args['ride']);
+    }
+
+    getRide(id: number): PluginRide | null {
         if (id === -1) {
             return null;
         }
 
-        const networkRide = this.getRideFromNetwork(id);
+        const mapRide = this.getRideFromMap(id);
         const storageRide = this.getRideFromStorage(id);
 
-        if (!networkRide || !storageRide) {
+        if (!mapRide || !storageRide) {
             return null;
         }
 
 
-        return {
-            id: networkRide.id,
-            name: networkRide.name,
-            type: networkRide.type,
-            classification: networkRide.classification,
-            status: networkRide.status,
-            mode: networkRide.mode,
-            colourSchemes: networkRide.colourSchemes,
-            stationStyle: networkRide.stationStyle,
-            music: networkRide.music,
-            stations: networkRide.stations,
-            price: networkRide.price,
-            excitement: networkRide.excitement,
-            intensity: networkRide.intensity,
-            nausea: networkRide.nausea,
-            totalCustomers: networkRide.totalCustomers,
-            runningCost: networkRide.runningCost,
-            value: networkRide.value,
-            object: networkRide.object,
-            totalProfit: networkRide.totalProfit,
-            playerHash: storageRide.playerHash,
-            previousTotalProfit: storageRide.previousTotalProfit ?? 0
-        };
+        return RideManager.parseRide(mapRide, storageRide);
     }
 
-    getRideFromNetwork(id: number): NetworkRide {
-        const networkRide: NetworkRide = map.rides.filter((nRide) => nRide.id === id)[0];
+    getRideFromMap(id: number): MapRide {
+        const ride = map.rides.filter((nRide) => nRide.id === id)[0];
 
-        if (!networkRide) {
+        if (!ride) {
             throw new Error("Something went wrong!");
         }
 
-        return networkRide;
+        return ride;
     }
 
     getRideFromStorage(id: number): StorageRide | undefined {
@@ -131,6 +125,10 @@ export class RideManager extends BaseManager {
     createRide(playerId: number, rideId: number): void {
         const player = this.playerManager.getPlayer(playerId);
 
+        if(!player) {
+            return;
+        }
+
         if (!player.rides.some((id) => id === rideId)) {
             const rides = player.rides;
             rides.push(rideId);
@@ -169,6 +167,11 @@ export class RideManager extends BaseManager {
         }
 
         const player = this.playerManager.getPlayer(storageRide.playerHash);
+
+        if(!player) {
+            return;
+        }
+
         const rides = player.rides.filter((ride) => ride !== id);
 
         // this.players.spendMoney(playerHash, -this.rideProperties[id].previousTotalProfit);
@@ -191,12 +194,37 @@ export class RideManager extends BaseManager {
         };
 
         const allStorageRides = this.getRidesFromStorage();
-        const filteredStoragedRides = allStorageRides.filter((sRide) => sRide.id !== id);
-        filteredStoragedRides.push(updatedStorageRide);
+        const filteredStorageRides = allStorageRides.filter((sRide) => sRide.id !== id);
+        filteredStorageRides.push(updatedStorageRide);
 
-        this.setValue("rides", filteredStoragedRides);
+        this.setValue("rides", filteredStorageRides);
 
         return updatedStorageRide;
+    }
 
+    static parseRide(mapRide: MapRide, storageRide: StorageRide): PluginRide {
+        return {
+            id: mapRide.id,
+            name: mapRide.name,
+            type: mapRide.type,
+            classification: mapRide.classification,
+            status: mapRide.status,
+            mode: mapRide.mode,
+            colourSchemes: mapRide.colourSchemes,
+            stationStyle: mapRide.stationStyle,
+            music: mapRide.music,
+            stations: mapRide.stations,
+            price: mapRide.price,
+            excitement: mapRide.excitement,
+            intensity: mapRide.intensity,
+            nausea: mapRide.nausea,
+            totalCustomers: mapRide.totalCustomers,
+            runningCost: mapRide.runningCost,
+            value: mapRide.value,
+            object: mapRide.object,
+            totalProfit: mapRide.totalProfit,
+            playerHash: storageRide.playerHash,
+            previousTotalProfit: storageRide.previousTotalProfit ?? 0
+        };
     }
 }

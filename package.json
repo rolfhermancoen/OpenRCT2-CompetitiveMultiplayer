@@ -29,5 +29,8 @@
     "tslib": "^2.5.0",
     "tsx": "^3.12.6",
     "typescript": "^5.0.3"
+  },
+  "dependencies": {
+    "currency.js": "^2.0.4"
   }
 }

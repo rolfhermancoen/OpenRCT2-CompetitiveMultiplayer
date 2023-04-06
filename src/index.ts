@@ -1,7 +1,7 @@
 
-/// <reference path="../types/openrct2.d.ts" />
+/// <reference path="../lib/openrct2.d.ts" />
 
-import { main } from "./main";
+import { main } from "@src/main";
 
 registerPlugin({
     name: "CompetitiveMultiplayer",

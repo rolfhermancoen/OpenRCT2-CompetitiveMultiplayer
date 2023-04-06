@@ -1,6 +1,8 @@
-import {BaseManager} from "./BaseManager";
-import {PlayerManager} from "./PlayerManager";
-import {RideManager} from "./RideManager";
+import currency from 'currency.js';
+import {BaseManager} from "@services/BaseManager";
+import {PlayerManager} from '@services/PlayerManager';
+import {RideManager} from '@services/RideManager';
+import {ACTION_TYPE, HOOK_TYPE} from "@lib/enum";
 
 interface EconomyManagerOptions {
     playerManager: PlayerManager
@@ -11,36 +13,31 @@ const INITIAL_BALANCE = 200000;
 const CMD_BALANCE = new RegExp('^balance($| )');
 const CMD_BALANCE_SHORT = new RegExp('^bal($| )');
 const BUILD_ACTIONS = [
-    'bannerplace',
-    'bannerremove',
-    'clearscenery',
-    'footpathplace',
-    'footpathplacefromtrack',
-    'foothpathremove',
-    'footpathsceneryplace',
-    'footpathsceneryremove',
-    'landbuyrights',
-    'landlower',
-    'landraise',
-    'largesceneryplace',
-    'largesceneryremove',
-    'mazeplacetrack',
-    'mazesettrack',
-    'parkmarketing',
-    'parksetloan',
-    'ridecreate',
-    'ridedemolish',
-    'smallsceneryplace',
-    'smallsceneryremove',
-    'surfacesetstyle',
-    'tilemodify',
-    'trackdesign',
-    'trackplace',
-    'trackremove',
-    'wallplace',
-    'wallremove',
-    'waterlower',
-    'waterraise'
+    ACTION_TYPE.BANNER_PLACE,
+    ACTION_TYPE.BANNER_REMOVE,
+    ACTION_TYPE.CLEAR_SCENERY,
+    ACTION_TYPE.FOOTPATH_PLACE,
+    ACTION_TYPE.FOOTPATH_REMOVE,
+    ACTION_TYPE.LAND_BUY_RIGHTS,
+    ACTION_TYPE.LAND_LOWER,
+    ACTION_TYPE.LAND_RAISE,
+    ACTION_TYPE.LARGE_SCENERY_PLACE,
+    ACTION_TYPE.LARGE_SCENERY_REMOVE,
+    ACTION_TYPE.MAZE_PLACE_TRACK,
+    ACTION_TYPE.MAZE_SET_TRACK,
+    ACTION_TYPE.RIDE_CREATE,
+    ACTION_TYPE.RIDE_DEMOLISH,
+    ACTION_TYPE.SMALL_SCENERY_PLACE,
+    ACTION_TYPE.SMALL_SCENERY_REMOVE,
+    ACTION_TYPE.SURFACE_SET_STYLE,
+    ACTION_TYPE.TILE_MODIFY,
+    ACTION_TYPE.TRACK_DESIGN,
+    ACTION_TYPE.TRACK_PLACE,
+    ACTION_TYPE.TRACK_REMOVE,
+    ACTION_TYPE.WALL_PLACE,
+    ACTION_TYPE.WALL_REMOVE,
+    ACTION_TYPE.WATER_LOWER,
+    ACTION_TYPE.WATER_RAISE
 ];
 
 
@@ -55,14 +52,13 @@ export class EconomyManager extends BaseManager {
     }
 
     override init(): void {
-        this.listenForCommands();
-        this.listenForQuery();
-        this.resetParkBalance();
-        this.broadcastMostProfitableRide();
+        this.watchNetworkChat();
+        this.watchActionQuery();
+        this.watchIntervalDay();
     }
 
-    listenForCommands(): void {
-        context.subscribe("network.chat", (event) => {
+    watchNetworkChat(): void {
+        context.subscribe(HOOK_TYPE.NETWORK_CHAT, (event) => {
             const {message, player} = event;
             const command = this.getCommand(message);
 
@@ -73,19 +69,32 @@ export class EconomyManager extends BaseManager {
             let responseMessage: string | null = null;
 
             if ((this.doesCommandMatch(command, [CMD_BALANCE, CMD_BALANCE_SHORT])) !== false) {
-                responseMessage = `{TOPAZ}Your current balance is: {WHITE}${EconomyManager.formatProfit(this.getPlayerBalance(player) ?? 0)}`;
+                responseMessage = `{YELLOW}Your current balance is: {GREEN}${EconomyManager.formatProfit(this.getPlayerBalance(player) ?? 0)}`;
             }
 
-            if (responseMessage !== null) {
-                context.setTimeout(() => network.sendMessage(responseMessage as string, [player]), 100);
+            if (responseMessage === null) {
+                return;
             }
 
-
+            context.setTimeout(() => this.broadcast(responseMessage as string, player), 100);
         });
     }
 
-    listenForQuery(): void {
-        context.subscribe("action.query", (event) => {
+    watchIntervalDay(): void {
+        context.subscribe(HOOK_TYPE.INTERVAL_DAY, () => {
+            if (park.cash <= 0) {
+                this.setParkBalance(INITIAL_BALANCE);
+            }
+
+            if (date.day === 1) {
+                this.broadcastMostProfitableRide();
+            }
+        });
+    }
+
+
+    watchActionQuery(): void {
+        context.subscribe(HOOK_TYPE.ACTION_QUERY, (event) => {
             const {result, player, action} = event;
 
             if (!('cost' in result) || !result.cost || result.cost < 0 || player === -1) {
@@ -94,12 +103,12 @@ export class EconomyManager extends BaseManager {
 
             const playerBalance = this.getPlayerBalance(player);
 
-            if (playerBalance && BUILD_ACTIONS.indexOf(action) >= 0) {
+            if (playerBalance && BUILD_ACTIONS.indexOf(action as ACTION_TYPE) >= 0) {
                 this.setParkBalance(playerBalance);
             }
 
             if (playerBalance && playerBalance < result.cost && result.cost > 0) {
-                network.sendMessage(`{RED}ERROR: Not enough cash to perform that action! It costs ${EconomyManager.formatProfit(result.cost)} and you have ${EconomyManager.formatProfit(playerBalance)}`, [player]);
+                this.broadcast(`{RED}ERROR: Not enough cash to perform that action! It costs ${EconomyManager.formatProfit(result.cost)} and you have ${EconomyManager.formatProfit(playerBalance)}`, player);
                 event.result = {
                     error: 1,
                     errorTitle: 'NOT ENOUGH CASH MONEY',
@@ -112,51 +121,38 @@ export class EconomyManager extends BaseManager {
         });
     }
 
-    resetParkBalance(): void {
-        context.subscribe("interval.day", () => {
-            if (park.cash <= 0) {
-                this.setParkBalance(INITIAL_BALANCE);
-            }
-        });
-    }
 
     broadcastMostProfitableRide(): void {
-        context.subscribe("interval.day", () => {
-            if (date.day !== 1) {
-                return;
+        let mostProfitableRide = {
+            id: 0,
+            name: '',
+            profit: 0
+        };
+
+        let message = '';
+
+        for (const ride of map.rides) {
+            const profit = this.getRideProfitDifference(ride.id);
+
+            if (profit > mostProfitableRide.profit) {
+                mostProfitableRide = {
+                    id: ride.id,
+                    name: ride.name,
+                    profit
+                };
             }
+        }
 
-            let mostProfitableRide = {
-                name: '',
-                player: '',
-                profit: 0
-            };
+        if (mostProfitableRide.profit > 0) {
+            const player = this.playerManager.getPlayerByRide(mostProfitableRide.id);
+            message += `{YELLOW}This month's most profitable ride is {WHITE}${mostProfitableRide.name}{YELLOW} by {WHITE}${player?.name}{YELLOW} with a profit of {GREEN}${EconomyManager.formatProfit(mostProfitableRide.profit)}{YELLOW}!`;
+        }
 
-            let message = '';
+        if (message === '') {
+            return;
+        }
 
-            for (const ride of map.rides) {
-                const profit = this.getRideProfitDifference(ride.id);
-
-                if (profit > mostProfitableRide.profit) {
-
-                    mostProfitableRide = {
-                        name: ride.name,
-                        player: "",
-                        profit
-                    };
-                }
-            }
-
-            if (mostProfitableRide.profit > 0) {
-                message += `{YELLOW}This month's most profitable ride is {WHITE}${mostProfitableRide.name}{YELLOW} by {WHITE}${mostProfitableRide.player}{YELLOW} with a profit of {WHITE}${EconomyManager.formatProfit(mostProfitableRide.profit)}{YELLOW}!`;
-            }
-
-            if (message != '') {
-                network.sendMessage(message);
-            }
-
-
-        });
+        this.broadcast(message);
     }
 
     getPlayerBalance(id: number): number | null {
@@ -217,13 +213,17 @@ export class EconomyManager extends BaseManager {
 
     static formatProfit(profit: number): string {
         const profitString = profit.toString();
-        const profitSpliced = profitString.substring(0, profitString.length - 1) + "." + profitString.substring(profitString.length - 1, profitString.length) + "0";
+        const profitSpliced = profitString.substring(0, profitString.length - 1) + "." + profitString.substring(profitString.length - 1, profitString.length);
 
-        return "$" + profitSpliced;
+        return currency(profitSpliced).format();
     }
 
     spendMoney(idOrHash: number | string, cost: number): void {
         const player = this.playerManager.getPlayer(idOrHash);
+
+        if (!player) {
+            return;
+        }
 
         this.playerManager.updateStoragePlayer(idOrHash, "moneySpent", player.moneySpent + cost);
     }

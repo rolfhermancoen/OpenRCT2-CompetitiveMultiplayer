@@ -1,4 +1,10 @@
 {
+  "include": [
+    "./lib/**/*.ts",
+    "./src/**/*.ts",
+    "./tests/**/*.ts"
+  ],
+  "extends": "./tsconfig.paths.json",
   "compilerOptions": {
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -14,12 +20,9 @@
     "outDir": "out",
     "strict": true,
     "target": "es5",
-    "lib": [ "es5" ]
+    "lib": [
+      "es5"
+    ]
   },
-  "include": [
-    "./lib/**/*.ts",
-    "./src/**/*.ts",
-    "./tests/**/*.ts"
-  ],
   "noEmit": true
 }

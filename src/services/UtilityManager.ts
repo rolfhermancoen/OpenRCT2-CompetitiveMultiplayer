@@ -1,4 +1,5 @@
-import {BaseManager} from "./BaseManager";
+import {BaseManager} from "@services/BaseManager";
+import {ACTION_TYPE, HOOK_TYPE} from "@lib/enum";
 
 export class UtilityManager extends BaseManager {
     constructor() {
@@ -11,15 +12,17 @@ export class UtilityManager extends BaseManager {
     }
 
     disableTrackDesigns(): void {
-        context.subscribe("action.query", (event) => {
+        context.subscribe(HOOK_TYPE.ACTION_QUERY, (event) => {
             const {player, action} = event;
 
-            if (player === -1 && action === "ridecreate") {
+            if (player === -1 && action === ACTION_TYPE.RIDE_CREATE) {
                 event.result = {
                     error: 1,
                     errorTitle: 'NO PLAYER INDEX',
                     errorMessage: 'Player is -1'
                 };
+
+
             }
         });
     }

@@ -1,3 +1,5 @@
+import {ACTION_TYPE} from "@lib/enum";
+
 const PREFIX = new RegExp('^(!|/)');
 
 export class BaseManager {
@@ -43,12 +45,27 @@ export class BaseManager {
         return `${this.name}_${key}`;
     }
 
-    protected broadcastOnJoin(message: string, players: number[]): void {
-        context.setTimeout(() => network.sendMessage(message, players), 1000);
+    protected broadcast(message: string, players?: number | number[]): void {
+        if(!players) {
+            network.sendMessage(message);
+            return;
+        }
+
+        const playersArg: number[] = Array.isArray(players) ? players : [players as number];
+        network.sendMessage(message, playersArg);
+    }
+
+    protected broadcastOnJoin(message: string, players?: number | number[]): void {
+        if(!players) {
+            network.sendMessage(message);
+            return;
+        }
+        const playersArg: number[] = Array.isArray(players) ? players : [players as number];
+        context.setTimeout(() => network.sendMessage(message, playersArg), 1000);
     }
 
     protected setCheatAction(type: number, param1: number = 1, param2: number = 0): void {
-        context.executeAction("setcheat", {
+        context.executeAction(ACTION_TYPE.CHEAT_SET, {
             type,
             param1,
             param2
