@@ -1,24 +1,26 @@
 import {BaseManager} from "./BaseManager";
 import {PlayerManager} from "./PlayerManager";
 
+const TILE_WIDTH = 32;
+
 type PermissionManagerOptions = {
     playerManager: PlayerManager
-}
+};
 
 export class PermissionManager extends BaseManager {
-    private playerManager: PlayerManager
+    private playerManager: PlayerManager;
 
     constructor(options: PermissionManagerOptions) {
         super();
-        this.playerManager = options.playerManager
+        this.playerManager = options.playerManager;
     }
 
-    override init() {
-        this.listenForQuery()
+    override init(): void {
+        this.listenForQuery();
     }
 
 
-    listenForQuery() {
+    listenForQuery(): void {
         context.subscribe("action.query", (event) => {
             const {action, args, player} = event;
 
@@ -33,7 +35,7 @@ export class PermissionManager extends BaseManager {
                         error: 1,
                         errorTitle: 'NOT ALLOWED',
                         errorMessage: 'Only admins can close or open the park.'
-                    }
+                    };
                     network.sendMessage('{RED}ERROR: Only admins can modify the park!', [player]);
                 }
             }
@@ -48,30 +50,28 @@ export class PermissionManager extends BaseManager {
                         error: 1,
                         errorTitle: 'NOT OWNED',
                         errorMessage: 'That ride belongs to another player.'
-                    }
+                    };
                     network.sendMessage('{RED}ERROR: {WHITE}That ride/stall doesn\'t belong to you!', [player]);
 
                 }
             }
-        })
+        });
     }
 
 
-    fixAction(event: GameActionEventArgs) {
+    fixAction(event: GameActionEventArgs): void {
         const {action, args} = event;
 
-        if (action !== "trackremove") {
+        if (action !== "trackremove" || !('x' in args) || !('y' in args) || !('z' in args) || !('ride' in event.args)) {
             return;
         }
 
-        // @ts-ignore
-        const tile = map.getTile(args["x"] / TILE_WIDTH, args["y"] / TILE_WIDTH);
+
+        const tile = map.getTile(args["x"] as number / TILE_WIDTH, args["y"] as number / TILE_WIDTH);
 
         for (let i = 0; i < tile.numElements; i++) {
             const element = tile.getElement(i);
-            // @ts-ignore
-            if (element.type === "track" && element.baseZ === args["z"]) {
-                // @ts-ignore
+            if (element.type === "track" && element.baseZ === args["z"] as number) {
                 event.args["ride"] = element.ride;
                 break;
             }
@@ -79,8 +79,8 @@ export class PermissionManager extends BaseManager {
     }
 
 
-    isAdmin(player: any) {
-        const {permissions}: PlayerGroup = network.getGroup(player.group)
+    isAdmin(player: { group: number}): boolean {
+        const {permissions}: PlayerGroup = network.getGroup(player.group);
         return permissions.indexOf("kick_player") >= 0;
     }
 }

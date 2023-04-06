@@ -7,7 +7,7 @@ interface EconomyManagerOptions {
     rideManager: RideManager
 }
 
-const INITIAL_BALANCE = 200000
+const INITIAL_BALANCE = 200000;
 const CMD_BALANCE = new RegExp('^balance($| )');
 const CMD_BALANCE_SHORT = new RegExp('^bal($| )');
 const BUILD_ACTIONS = [
@@ -54,14 +54,14 @@ export class EconomyManager extends BaseManager {
         this.rideManager = options.rideManager;
     }
 
-    override init() {
-        this.listenForCommands()
-        this.listenForQuery()
+    override init(): void {
+        this.listenForCommands();
+        this.listenForQuery();
         this.resetParkBalance();
         this.broadcastMostProfitableRide();
     }
 
-    listenForCommands() {
+    listenForCommands(): void {
         context.subscribe("network.chat", (event) => {
             const {message, player} = event;
             const command = this.getCommand(message);
@@ -81,10 +81,10 @@ export class EconomyManager extends BaseManager {
             }
 
 
-        })
+        });
     }
 
-    listenForQuery() {
+    listenForQuery(): void {
         context.subscribe("action.query", (event) => {
             const {result, player, action} = event;
 
@@ -104,23 +104,23 @@ export class EconomyManager extends BaseManager {
                     error: 1,
                     errorTitle: 'NOT ENOUGH CASH MONEY',
                     errorMessage: 'Can\'t afford to perform action'
-                }
+                };
                 return;
             }
 
             this.spendMoney(player, result.cost);
-        })
+        });
     }
 
-    resetParkBalance() {
+    resetParkBalance(): void {
         context.subscribe("interval.day", () => {
             if (park.cash <= 0) {
                 this.setParkBalance(INITIAL_BALANCE);
             }
-        })
+        });
     }
 
-    broadcastMostProfitableRide() {
+    broadcastMostProfitableRide(): void {
         context.subscribe("interval.day", () => {
             if (date.day !== 1) {
                 return;
@@ -156,17 +156,17 @@ export class EconomyManager extends BaseManager {
             }
 
 
-        })
+        });
     }
 
     getPlayerBalance(id: number): number | null {
         const player = this.playerManager.getPlayer(id);
 
         if (!player) {
-            return null
+            return null;
         }
 
-        const playerProfit = this.getPlayerProfit(id)
+        const playerProfit = this.getPlayerProfit(id);
 
         return INITIAL_BALANCE - player.moneySpent + (playerProfit !== null ? playerProfit : 0);
     }
@@ -180,7 +180,7 @@ export class EconomyManager extends BaseManager {
 
         let profit = 0;
         for (const rideID of player.rides) {
-            const rideProfit = this.getRideProfit(rideID)
+            const rideProfit = this.getRideProfit(rideID);
             profit += (rideProfit !== null ? rideProfit : 0);
         }
         return profit;
@@ -197,7 +197,7 @@ export class EconomyManager extends BaseManager {
         return Math.max(ride.totalProfit, (ride.type === 36) ? 0 : ride.totalProfit);
     }
 
-    getRideProfitDifference(id: number) {
+    getRideProfitDifference(id: number): number {
         const ride = this.rideManager.getRide(id);
 
         if (ride === null) {
@@ -211,21 +211,21 @@ export class EconomyManager extends BaseManager {
         return profit - previous;
     }
 
-    setParkBalance(value: number) {
+    setParkBalance(value: number): void {
         this.setCheatAction(17, Math.max(value, INITIAL_BALANCE));
     }
 
     static formatProfit(profit: number): string {
-        const profitString = profit.toString()
+        const profitString = profit.toString();
         const profitSpliced = profitString.substring(0, profitString.length - 1) + "." + profitString.substring(profitString.length - 1, profitString.length) + "0";
 
-        return "$" + profitSpliced
+        return "$" + profitSpliced;
     }
 
-    spendMoney(idOrHash: number | string, cost: number) {
-        const player = this.playerManager.getPlayer(idOrHash)
+    spendMoney(idOrHash: number | string, cost: number): void {
+        const player = this.playerManager.getPlayer(idOrHash);
 
-        this.playerManager.updateStoragePlayer(idOrHash, "moneySpent", player.moneySpent + cost)
+        this.playerManager.updateStoragePlayer(idOrHash, "moneySpent", player.moneySpent + cost);
     }
 
 }

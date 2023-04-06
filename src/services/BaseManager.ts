@@ -2,29 +2,29 @@ const PREFIX = new RegExp('^(!|/)');
 
 export class BaseManager {
     private readonly name: string;
-    private readonly storage: Configuration
+    private readonly storage: Configuration;
 
     constructor() {
         if (!('name' in this.constructor)) {
-            throw new Error("Something went wrong!")
+            throw new Error("Something went wrong!");
         }
 
         this.name = this.constructor["name"] as string;
 
         if (this.name === "BaseManager") {
-            throw new Error("BaseManager can only be extended, not used independently!")
+            throw new Error("BaseManager can only be extended, not used independently!");
         }
 
         this.storage = context.getParkStorage();
         this.init();
     }
 
-    init() {
+    init(): void {
         // does nothing
     }
 
-    protected getName() {
-        return this.name
+    protected getName(): string {
+        return this.name;
     }
 
     protected getValue<T>(key: string): T | undefined {
@@ -36,14 +36,14 @@ export class BaseManager {
     }
 
     protected hasValue(key: string): boolean {
-        return this.storage.has(this.parseKey(key))
+        return this.storage.has(this.parseKey(key));
     }
 
     private parseKey(key: string): string {
-        return `${this.name}_${key}`
+        return `${this.name}_${key}`;
     }
 
-    protected broadcastOnJoin(message: string, players: number[]) {
+    protected broadcastOnJoin(message: string, players: number[]): void {
         context.setTimeout(() => network.sendMessage(message, players), 1000);
     }
 
@@ -65,7 +65,7 @@ export class BaseManager {
     protected doesCommandMatch(string: string, commands: RegExp[]): boolean | string {
         for (const command of commands) {
             if (command.test(string)) {
-                let ret = string.substring(command.source.length, string.length).trim();
+                const ret = string.substring(command.source.length, string.length).trim();
                 return (ret) ? ret : true;
             }
 

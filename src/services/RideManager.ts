@@ -7,7 +7,7 @@ type StorageRide = {
     id: number
     playerHash: string;
     previousTotalProfit: number
-}
+};
 
 interface RideManagerOptions {
     playerManager: PlayerManager
@@ -22,11 +22,11 @@ export class RideManager extends BaseManager {
         this.playerManager = options.playerManager;
     }
 
-    override init() {
+    override init(): void {
         this.subscribeActionExecute();
     }
 
-    subscribeActionExecute() {
+    subscribeActionExecute(): void {
         context.subscribe('action.execute', ({player, action, result, args}) => {
             if (player === -1) {
                 return;
@@ -95,13 +95,13 @@ export class RideManager extends BaseManager {
     }
 
     getRideFromStorage(id: number): StorageRide | undefined {
-        const rides = this.getRidesFromStorage()
+        const rides = this.getRidesFromStorage();
         return rides?.filter((ride) => ride.id === id)[0];
     }
 
 
     getRidesFromStorage(): StorageRide[] {
-        const rides = this.getValue<StorageRide[]>("rides")
+        const rides = this.getValue<StorageRide[]>("rides");
         return rides ?? [];
     }
 
@@ -112,15 +112,15 @@ export class RideManager extends BaseManager {
             id: rideId,
             playerHash,
             previousTotalProfit: 0
-        }
+        };
 
         rides.push(newRide);
         this.setValue("rides", rides);
 
-        return newRide
+        return newRide;
     }
 
-    deleteRideStorage(id: number) {
+    deleteRideStorage(id: number): void {
         const rides = this.getRidesFromStorage();
 
         const filteredRides = rides.filter((ride) => ride.id !== id);
@@ -128,7 +128,7 @@ export class RideManager extends BaseManager {
         this.setValue("rides", filteredRides);
     }
 
-    createRide(playerId: number, rideId: number) {
+    createRide(playerId: number, rideId: number): void {
         const player = this.playerManager.getPlayer(playerId);
 
         if (!player.rides.some((id) => id === rideId)) {
@@ -142,8 +142,8 @@ export class RideManager extends BaseManager {
         this.setRideName(playerId, player.name, rideId);
     }
 
-    setRideName(playerId: number, playerName: string, rideId: number) {
-        const setName = (name: string, num: number) => {
+    setRideName(playerId: number, playerName: string, rideId: number): void {
+        const setName = (name: string, num: number): void => {
             context.executeAction('ridesetname', {
                 ride: rideId,
                 name: `${name} ${num}`
@@ -151,17 +151,17 @@ export class RideManager extends BaseManager {
                 if (result.error === 1 && num < 50) {
                     setName(name, num + 1);
                 }
-            })
-        }
+            });
+        };
 
         if (playerId >= 0 && playerId < network.numPlayers) {
-            const ride = this.getRide(rideId as number)
+            const ride = this.getRide(rideId as number);
             setName(`${playerName} ${ride?.name.replace(/[0-9]/g, '').trim()}`, 1);
         }
     }
 
 
-    demolishRide(id: number) {
+    demolishRide(id: number): void {
         const storageRide = this.getRideFromStorage(id);
 
         if (!storageRide) {
@@ -178,17 +178,17 @@ export class RideManager extends BaseManager {
         this.deleteRideStorage(id);
     }
 
-    updateStorageRide<T>(id: number, key: string, value: T) {
+    updateStorageRide<T>(id: number, key: string, value: T): StorageRide | null {
         const storageRide = this.getRideFromStorage(id);
 
         if (!storageRide) {
-            return;
+            return null;
         }
 
         const updatedStorageRide = {
             ...storageRide,
             [key]: value
-        }
+        };
 
         const allStorageRides = this.getRidesFromStorage();
         const filteredStoragedRides = allStorageRides.filter((sRide) => sRide.id !== id);
@@ -196,7 +196,7 @@ export class RideManager extends BaseManager {
 
         this.setValue("rides", filteredStoragedRides);
 
-        return updatedStorageRide
+        return updatedStorageRide;
 
     }
 }

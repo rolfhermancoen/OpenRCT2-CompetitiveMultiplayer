@@ -12,14 +12,14 @@ export const main = (): void => {
     const playerManager = new PlayerManager();
     const rideManager = new RideManager({
         playerManager,
-    })
+    });
 
     new EconomyManager({
         playerManager,
         rideManager
-    })
+    });
     new PermissionManager({
         playerManager,
-    })
+    });
     new UtilityManager();
 };

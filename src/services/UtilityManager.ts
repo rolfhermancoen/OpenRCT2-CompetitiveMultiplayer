@@ -5,12 +5,12 @@ export class UtilityManager extends BaseManager {
         super();
     }
 
-    override init() {
+    override init(): void {
         this.disableTrackDesigns();
         this.enableCheats();
     }
 
-    disableTrackDesigns() {
+    disableTrackDesigns(): void {
         context.subscribe("action.query", (event) => {
             const {player, action} = event;
 
@@ -19,12 +19,12 @@ export class UtilityManager extends BaseManager {
                     error: 1,
                     errorTitle: 'NO PLAYER INDEX',
                     errorMessage: 'Player is -1'
-                }
+                };
             }
-        })
+        });
     }
 
-    enableCheats() {
+    enableCheats(): void {
         // disable vandalism
         this.setCheatAction(13);
 

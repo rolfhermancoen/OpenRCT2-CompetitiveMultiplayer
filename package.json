@@ -11,6 +11,7 @@
     "build": "npm run lint && rollup --config rollup.config.js --environment BUILD:production",
     "build:dev": "rollup --config rollup.config.js",
     "lint": "eslint ./src --ext .js --ext .ts",
+    "lint:fix": "eslint --fix ./src --ext .js --ext .ts",
     "gettypes": "curl https://raw.githubusercontent.com/OpenRCT2/OpenRCT2/develop/distribution/openrct2.d.ts > types/openrct2.d.ts"
   },
   "devDependencies": {
@@ -18,6 +19,8 @@
     "@rollup/plugin-replace": "^5.0.2",
     "@rollup/plugin-terser": "^0.4.0",
     "@rollup/plugin-typescript": "^11.1.0",
+    "@typescript-eslint/eslint-plugin": "^5.57.1",
+    "@typescript-eslint/parser": "^5.57.1",
     "eslint": "^8.37.0",
     "eslint-plugin-import": "^2.27.5",
     "nodemon": "^2.0.22",

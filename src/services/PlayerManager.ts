@@ -6,31 +6,31 @@ type StoragePlayer = {
     hash: string;
     rides: number[];
     moneySpent: number,
-}
+};
 
 export class PlayerManager extends BaseManager {
     constructor() {
         super();
     }
 
-    override init() {
-        this.subscribeNetworkJoin()
+    override init(): void {
+        this.subscribeNetworkJoin();
     }
 
-    subscribeNetworkJoin() {
+    subscribeNetworkJoin(): void {
         context.subscribe('network.join', ({player}) => {
             const networkPlayer = this.getPlayerFromNetwork(player);
 
-            const storagePlayer = this.getPlayerFromStorage(networkPlayer.publicKeyHash)
+            const storagePlayer = this.getPlayerFromStorage(networkPlayer.publicKeyHash);
 
             if(!storagePlayer) {
-                this.createStoragePlayer(networkPlayer)
+                this.createStoragePlayer(networkPlayer);
                 this.broadcastOnJoin(`{NEWLINE}{YELLOW}This server uses the Competitive Plugin.`, [player]);
                 return;
             }
 
-            this.broadcastOnJoin(`{YELLOW}Welcome back, {WHITE}${networkPlayer.name}{WHITE}!`, [player])
-        })
+            this.broadcastOnJoin(`{YELLOW}Welcome back, {WHITE}${networkPlayer.name}{WHITE}!`, [player]);
+        });
     }
 
     getPlayer(idOrHash: number | string): Omit<NetworkPlayer, "publicKeyHash"> & StoragePlayer {
@@ -53,28 +53,28 @@ export class PlayerManager extends BaseManager {
             moneySpent: storagePlayer.moneySpent ?? 0,
             hash: storagePlayer.hash,
             rides: storagePlayer.rides
-        }
+        };
     }
 
     getPlayerFromNetwork(idOrHash: number | string): NetworkPlayer {
         let networkPlayer;
 
         if(typeof idOrHash === "number") {
-            networkPlayer = network.players.filter((player) => player.id === idOrHash)[0]
+            networkPlayer = network.players.filter((player) => player.id === idOrHash)[0];
         } else {
-            networkPlayer = network.players.filter((player) => player.publicKeyHash === idOrHash)[0]
+            networkPlayer = network.players.filter((player) => player.publicKeyHash === idOrHash)[0];
         }
 
         if(!networkPlayer) {
             throw new Error("No network player found!");
         }
 
-        return networkPlayer
+        return networkPlayer;
 
     }
 
     getPlayerFromStorage(hash: string): StoragePlayer | undefined {
-        const players = this.getPlayersFromStorage()
+        const players = this.getPlayersFromStorage();
         return players?.filter((player) => player.hash === hash)[0];
     }
 
@@ -90,7 +90,7 @@ export class PlayerManager extends BaseManager {
             hash: networkPlayer.publicKeyHash,
             rides: [],
             moneySpent: 0
-        }
+        };
 
         players.push(storagePlayer);
         this.setValue("players", players);
@@ -98,28 +98,24 @@ export class PlayerManager extends BaseManager {
         return storagePlayer;
     }
 
-    updateStoragePlayer<T>(idOrHash: number | string, key: string, value: T) {
+    updateStoragePlayer<T>(idOrHash: number | string, key: string, value: T): StoragePlayer | null   {
         const player = this.getPlayer(idOrHash);
         const storagePlayer = this.getPlayerFromStorage(player.hash);
 
-        console.log('storagePlayer', storagePlayer);
-
         if(!storagePlayer) {
-            return;
+            return null;
         }
 
         const updatedStoragePlayer = {
             ...storagePlayer,
             [key]: value
-        }
+        };
 
         const allStoragePlayers = this.getPlayersFromStorage();
         const filteredStoragePlayers = allStoragePlayers.filter((sPlayer) => sPlayer.hash !== storagePlayer.hash);
         filteredStoragePlayers.push(updatedStoragePlayer);
 
         this.setValue("players", filteredStoragePlayers);
-
-        console.log('updatedStoragePlayer', updatedStoragePlayer)
 
         return updatedStoragePlayer;
     }
