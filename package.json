@@ -1,0 +1,30 @@
+{
+  "name": "open-rct2-competitive-multiplayer",
+  "version": "0.1",
+  "main": "app.js",
+  "author": "DeRofle",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "npm run watch",
+    "watch": "nodemon --watch ./src --ext js,ts",
+    "build": "npm run lint && rollup --config rollup.config.js --environment BUILD:production",
+    "build:dev": "rollup --config rollup.config.js",
+    "lint": "eslint ./src --ext .js --ext .ts",
+    "gettypes": "curl https://raw.githubusercontent.com/OpenRCT2/OpenRCT2/develop/distribution/openrct2.d.ts > types/openrct2.d.ts"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.0.2",
+    "@rollup/plugin-replace": "^5.0.2",
+    "@rollup/plugin-terser": "^0.4.0",
+    "@rollup/plugin-typescript": "^11.1.0",
+    "eslint": "^8.37.0",
+    "eslint-plugin-import": "^2.27.5",
+    "nodemon": "^2.0.22",
+    "platform-folders": "^0.6.0",
+    "rollup": "^3.20.2",
+    "tslib": "^2.5.0",
+    "tsx": "^3.12.6",
+    "typescript": "^5.0.3"
+  }
+}
