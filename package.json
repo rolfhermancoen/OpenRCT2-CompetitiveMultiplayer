@@ -12,7 +12,7 @@
     "build:dev": "rollup --config rollup.config.js",
     "lint": "eslint ./src --ext .js --ext .ts",
     "lint:fix": "eslint --fix ./src --ext .js --ext .ts",
-    "gettypes": "curl https://raw.githubusercontent.com/OpenRCT2/OpenRCT2/develop/distribution/openrct2.d.ts > types/openrct2.d.ts"
+    "gettypes": "curl https://raw.githubusercontent.com/OpenRCT2/OpenRCT2/develop/distribution/openrct2.d.ts > lib/openrct2.d.ts"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^15.0.2",
