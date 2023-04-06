@@ -1,12 +1,21 @@
 import {BaseManager} from "@services/BaseManager";
 import {PlayerManager} from "@services/PlayerManager";
 import {ACTION_TYPE, TILE_ELEMENT_TYPE} from "@lib/enum";
-
-const TILE_WIDTH = 32;
+import {getTileByCoords} from "@utils/map";
 
 type PermissionManagerOptions = {
     playerManager: PlayerManager
 };
+
+const RESTRICTED_ACTIONS = [
+    ACTION_TYPE.PARK_SET_PARAMETER,
+    ACTION_TYPE.PARK_SET_NAME,
+    ACTION_TYPE.PARK_SET_ENTRANCE_FEE,
+    ACTION_TYPE.LAND_BUY_RIGHTS,
+    ACTION_TYPE.PARK_SET_LOAN,
+    ACTION_TYPE.PARK_MARKETING,
+    ACTION_TYPE.PARK_SET_RESEARCH_FUNDING
+];
 
 export class PermissionManager extends BaseManager {
     private playerManager: PlayerManager;
@@ -24,11 +33,15 @@ export class PermissionManager extends BaseManager {
         context.subscribe("action.query", (event) => {
             const {action, args, player} = event;
 
-            if (action === ACTION_TYPE.RIDE_CREATE || PlayerManager.isServerPlayer(player)) {
+            if(PlayerManager.isServerPlayer(player)) {
                 return;
             }
 
-            if (action === ACTION_TYPE.PARK_SET_PARAMETER || action === ACTION_TYPE.PARK_SET_NAME || action === ACTION_TYPE.PARK_SET_ENTRANCE_FEE || action === ACTION_TYPE.LAND_BUY_RIGHTS || action === ACTION_TYPE.PARK_SET_LOAN || action === ACTION_TYPE.PARK_MARKETING || action === ACTION_TYPE.PARK_SET_RESEARCH_FUNDING) {
+            if (action === ACTION_TYPE.RIDE_CREATE) {
+                return;
+            }
+
+            if (RESTRICTED_ACTIONS.indexOf(action as ACTION_TYPE) >= 0) {
                 this.handleRestrictedActions(event);
                 return;
             }
@@ -80,7 +93,7 @@ export class PermissionManager extends BaseManager {
             return newEvent;
         }
 
-        const tile = map.getTile(args["x"] as number / TILE_WIDTH, args["y"] as number / TILE_WIDTH);
+        const tile = getTileByCoords(args["x"] as number, args["y"] as number);
 
         for (let i = 0; i < tile.numElements; i++) {
             const element = tile.getElement(i);

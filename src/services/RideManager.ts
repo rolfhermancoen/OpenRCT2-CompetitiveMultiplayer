@@ -1,6 +1,7 @@
 import {BaseManager} from "@services//BaseManager";
 import {PlayerManager} from "@services//PlayerManager";
 import {ACTION_TYPE} from "@lib/enum";
+import {find} from "@utils/array";
 
 type MapRide = Ride;
 
@@ -79,7 +80,7 @@ export class RideManager extends BaseManager {
     }
 
     getRideFromMap(id: number): MapRide {
-        const ride = map.rides.filter((nRide) => nRide.id === id)[0];
+        const ride = find(map.rides, ((nRide) => nRide.id === id));
 
         if (!ride) {
             throw new Error("Something went wrong!");
@@ -88,9 +89,9 @@ export class RideManager extends BaseManager {
         return ride;
     }
 
-    getRideFromStorage(id: number): StorageRide | undefined {
+    getRideFromStorage(id: number): StorageRide | null {
         const rides = this.getRidesFromStorage();
-        return rides?.filter((ride) => ride.id === id)[0];
+        return find(rides, (ride) => ride.id === id);
     }
 
 

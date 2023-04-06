@@ -1,4 +1,5 @@
 import {BaseManager} from "@services/BaseManager";
+import {find} from "@utils/array";
 
 type NetworkPlayer = Omit<Player, "ipAddress" | "ping" | "moneySpent">;
 
@@ -61,7 +62,7 @@ export class PlayerManager extends BaseManager {
     getPlayerByRide(id: number): PluginPlayer | null {
         const allStoragePlayers = this.getPlayersFromStorage();
 
-        const foundStoragePlayer = allStoragePlayers.filter((sPlayer) => sPlayer.rides.some((ride) => ride == id))[0];
+        const foundStoragePlayer = find(allStoragePlayers, (sPlayer) => sPlayer.rides.some((ride) => ride == id));
 
         if(!foundStoragePlayer) {
             return null;
@@ -74,9 +75,9 @@ export class PlayerManager extends BaseManager {
         let networkPlayer;
 
         if(typeof idOrHash === "number") {
-            networkPlayer = network.players.filter((player) => player.id === idOrHash)[0];
+            networkPlayer = find(network.players, ((player) => player.id === idOrHash));
         } else {
-            networkPlayer = network.players.filter((player) => player.publicKeyHash === idOrHash)[0];
+            networkPlayer = find(network.players, ((player) => player.publicKeyHash === idOrHash));
         }
 
         if(!networkPlayer) {
@@ -87,9 +88,9 @@ export class PlayerManager extends BaseManager {
 
     }
 
-    getPlayerFromStorage(hash: string): StoragePlayer | undefined {
+    getPlayerFromStorage(hash: string): StoragePlayer | null {
         const players = this.getPlayersFromStorage();
-        return players?.filter((player) => player.hash === hash)[0];
+        return find(players, ((player) => player.hash === hash));
     }
 
     getPlayersFromStorage(): StoragePlayer[] {
