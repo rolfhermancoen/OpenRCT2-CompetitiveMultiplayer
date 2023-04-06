@@ -2,7 +2,7 @@
   "name": "open-rct2-competitive-multiplayer",
   "version": "0.1",
   "main": "app.js",
-  "author": "DeRofle",
+  "author": "rolfhermancoen",
   "license": "MIT",
   "type": "module",
   "scripts": {

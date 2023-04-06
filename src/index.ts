@@ -6,7 +6,7 @@ import { main } from "./main";
 registerPlugin({
     name: "CompetitiveMultiplayer",
     version: "0.1",
-    authors: ["DeRofle"],
+    authors: ["rolfhermancoen"],
     type: "remote",
     licence: "MIT",
     targetApiVersion: 69,
