@@ -1,17 +1,19 @@
 import currency from 'currency.js';
-import {PlayerManager} from '@src/manager/PlayerManager';
-import {RideManager} from '@src/manager/RideManager';
+import {PlayerManager} from '@manager/PlayerManager';
+import {RideManager} from '@manager/RideManager';
+
 import {ACTION_TYPE, HOOK_TYPE} from "@lib/enum";
+
 import {Messenger} from "@services/Messenger";
 import {Commander} from "@services/Commander";
 import {Cheater} from "@services/Cheater";
+import {Logger} from "@services/Logger";
 
 let instantiated = false;
 
 interface EconomyManagerOptions {
     messenger: Messenger
     commander: Commander
-    cheater: Cheater
     playerManager: PlayerManager
     rideManager: RideManager
 }
@@ -92,14 +94,22 @@ export class EconomyManager {
      * @return {EconomyManager}
      */
     constructor(options: EconomyManagerOptions) {
-        if(instantiated) {
+        if (instantiated) {
             throw new Error("UtilityManager can only be instantiated once, and needs to be injected into other classes.");
         }
         instantiated = true;
 
         this.messenger = options.messenger;
         this.commander = options.commander;
-        this.cheater = options.cheater;
+
+        const logger = new Logger({
+            name: "EconomyManager"
+        });
+
+        this.cheater = new Cheater({
+            logger,
+        });
+
         this.playerManager = options.playerManager;
         this.rideManager = options.rideManager;
         this.init();
@@ -357,7 +367,6 @@ export class EconomyManager {
 
         return currency(profitSpliced).format();
     }
-
 
 
 }

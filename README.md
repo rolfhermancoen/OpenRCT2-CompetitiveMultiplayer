@@ -64,6 +64,11 @@ This project supports the [OpenRCT2 hot reload feature](https://github.com/OpenR
 6. Each time you save any of the files in `./src/`, the server will compile `./src/registerPlugin.ts` and place compiled plugin file inside your local OpenRCT2 plugin directory.
 7. OpenRCT2 will notice file changes and it will reload the plugin.
 
+### Headless Server
+
+For convenience, it is possible to include a shell file, to start the server from the repository itself, but because install paths and config paths are different on each machine, this `server.sh` is ignored for the git.
+There is however a `npm run server` and `yarn server` command available in the package, which runs the shell file, if it exists. An example shell file is included, but needs modification to work on a system.
+
 ### Final notes
 
 Thanks to [wisnia74](https://github.com/wisnia74/openrct2-typescript-mod-template) for providing the template for this plugin and parts of the readme. Also a special thanks to [Basssiiie](https://github.com/Basssiiie) for providing help and inspiration when needed!

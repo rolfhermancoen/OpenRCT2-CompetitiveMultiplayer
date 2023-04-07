@@ -1,7 +1,7 @@
 
 /// <reference path="../lib/openrct2.d.ts" />
 
-import { main } from "@src/main";
+import { start } from "@src/start";
 
 registerPlugin({
     name: "CompetitiveMultiplayer",
@@ -10,5 +10,5 @@ registerPlugin({
     type: "remote",
     licence: "MIT",
     targetApiVersion: 69,
-    main,
+    main: start,
 });

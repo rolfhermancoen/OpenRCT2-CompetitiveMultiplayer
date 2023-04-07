@@ -22,7 +22,10 @@ if (Environment.isDevelopment && isDuktapeAvailable)
     };
 }
 
-let instantiated = false;
+type LoggerOptions = {
+    name?: string;
+};
+
 
 /**
  * Class representing logger.
@@ -30,15 +33,18 @@ let instantiated = false;
  */
 export class Logger {
     /**
-     * Construct a new Logger and checks if none has been instantiated yet
+     * name used for prefixing the logs
+     * @private
+     * @type {name | undefined}
+     */
+    private readonly name: string | undefined;
+    /**
+     * Construct a new Logger
      *
      * @public
      */
-    constructor() {
-        if(instantiated) {
-            throw new Error("Logger can only be instantiated once, and needs to be injected into other classes.");
-        }
-        instantiated = true;
+    constructor(options: LoggerOptions) {
+        this.name = options.name;
     }
     /**
      * Prints a message with the specified logging and plugin identifier.
@@ -50,7 +56,7 @@ export class Logger {
      */
     private print(level: LogLevel, messages: unknown[]): void
     {
-        console.log(`<CM/${level}> ${messages.join(" ")}`);
+        console.log(`<CM/${this.name ?? "Unknown"}/${level}> ${messages.join(" ")}`);
     }
 
     /**

@@ -1,24 +1,24 @@
-import {PlayerManager} from "@src/manager/PlayerManager";
-import {ACTION_TYPE} from "@lib/enum";
+import {PlayerManager} from "@manager/PlayerManager";
+
+import {ACTION_TYPE, HOOK_TYPE} from "@lib/enum";
+
 import {find} from "@utils/array";
+
 import {Storage} from "@services/Storage";
 import {Logger} from "@services/Logger";
 
 let instantiated = false;
 
-type MapRide = Ride;
-
-type StorageRide = {
+type SRide = {
     id: number
     playerHash: string;
     previousTotalProfit: number
 };
 
-export type PluginRide = Omit<MapRide & StorageRide, "lifecycleFlags" | "departFlags" | "minimumWaitingTime" | "maximumWaitingTime" | "vehicles" | "vehicleColours" | "buildDate" | "age" | "inspectionInterval" | "downtime" | "liftHillSpeed" | "minLiftHillSpeed" | "maxLiftHillSpeed">;
+export type IRide = SRide & Pick<Ride, "name" | "totalProfit" | "type">;
 
 type RideManagerOptions = {
     playerManager: PlayerManager
-    logger: Logger;
 };
 
 /**
@@ -51,20 +51,25 @@ export class RideManager {
      * Construct a new RideManager and checks if none has been instantiated yet, then runs the init function
      *
      * @public
-     * @param {UtilityManagerOptions} options - the options provided when instantiating
-     * @return {UtilityManager}
+     * @param {RideManagerOptions} options - the options provided when instantiating
+     * @return {RideManager}
      */
     constructor(options: RideManagerOptions) {
-        if(instantiated) {
+        if (instantiated) {
             throw new Error("UtilityManager can only be instantiated once, and needs to be injected into other classes.");
         }
         instantiated = true;
 
         this.playerManager = options.playerManager;
-        this.logger = options.logger;
+
+        this.logger = new Logger({
+            name: "RideManager"
+        });
+
         this.storage = new Storage({
             name: "RideManager"
         });
+
         this.init();
     }
 
@@ -85,7 +90,7 @@ export class RideManager {
      * @return {void}
      */
     private watchForActions(): void {
-        context.subscribe('action.execute', (event) => {
+        context.subscribe(HOOK_TYPE.ACTION_EXECUTE, (event) => {
             const {player, action} = event;
             if (PlayerManager.isServerPlayer(player)) {
                 return;
@@ -136,22 +141,22 @@ export class RideManager {
      *
      * @public
      * @param {number} id - the id to find the ride
-     * @return {PluginRide | null}
+     * @return {IRide | null}
      */
-    public getRide(id: number): PluginRide | null {
+    public getRide(id: number): IRide | null {
         if (id === -1) {
             return null;
         }
 
-        const mapRide = this.getRideFromMap(id);
-        const storageRide = this.getRideFromStorage(id);
+        const mRide = this.getMapRide(id);
+        const sRide = this.getStorageRide(id);
 
-        if (!mapRide || !storageRide) {
+        if (!mRide || !sRide) {
             return null;
         }
 
 
-        return RideManager.parseRide(mapRide, storageRide);
+        return RideManager.parseRide(mRide, sRide);
     }
 
     /**
@@ -159,17 +164,17 @@ export class RideManager {
      *
      * @private
      * @param {number} id - the id to find the ride
-     * @return {MapRide | null}
+     * @return {Ride | null}
      */
-    private getRideFromMap(id: number): MapRide | null {
-        const ride = find(map.rides, ((nRide) => nRide.id === id));
+    private getMapRide(id: number): Ride | null {
+        const mRide = find(map.rides, ((nRide) => nRide.id === id));
 
-        if (!ride) {
-            this.logger.error("Something went wrong!");
+        if (!mRide) {
+            this.logger.error(`Could not find mRide with id: ${id}`);
             return null;
         }
 
-        return ride;
+        return mRide;
     }
 
     /**
@@ -177,22 +182,22 @@ export class RideManager {
      *
      * @private
      * @param {number} id - the id to find the ride
-     * @return {StorageRide | null}
+     * @return {SRide | null}
      */
-    private getRideFromStorage(id: number): StorageRide | null {
-        const storageRides = this.getAllRidesFromStorage();
-        return find(storageRides, (ride) => ride.id === id);
+    private getStorageRide(id: number): SRide | null {
+        const sRides = this.getAllStorageRides();
+        return find(sRides, (ride) => ride.id === id);
     }
 
     /**
      * Gets all the rides from storage
      *
      * @private
-     * @return {StorageRide[] | null}
+     * @return {SRide[] | null}
      */
-    private getAllRidesFromStorage(): StorageRide[] {
-        const storageRides = this.storage.getValue<StorageRide[]>("rides");
-        return storageRides ?? [];
+    private getAllStorageRides(): SRide[] {
+        const sRides = this.storage.getValue<SRide[]>("rides");
+        return sRides ?? [];
     }
 
     /**
@@ -201,21 +206,21 @@ export class RideManager {
      * @private
      * @param {string} playerHash - the hash of the player to connect the ride to
      * @param {number} rideId - the id of the ride
-     * @return {StorageRide}
+     * @return {SRide}
      */
-    private createRideStorage(playerHash: string, rideId: number): StorageRide {
-        const storageRides = this.getAllRidesFromStorage();
+    private createRideStorage(playerHash: string, rideId: number): SRide {
+        const sRides = this.getAllStorageRides();
 
-        const newStorageRide = {
+        const newSRide = {
             id: rideId,
             playerHash,
             previousTotalProfit: 0
         };
 
-        storageRides.push(newStorageRide);
-        this.storage.setValue("rides", storageRides);
+        sRides.push(newSRide);
+        this.storage.setValue("rides", sRides);
 
-        return newStorageRide;
+        return newSRide;
     }
 
     /**
@@ -225,12 +230,12 @@ export class RideManager {
      * @param {number} id - the id of the ride
      * @return {void}
      */
-    private deleteRideStorage(id: number): void {
-        const storageRides = this.getAllRidesFromStorage();
+    private deleteStorageRide(id: number): void {
+        const sRides = this.getAllStorageRides();
 
-        const filteredStorageRides = storageRides.filter((ride) => ride.id !== id);
+        const filteredSRides = sRides.filter((ride) => ride.id !== id);
 
-        this.storage.setValue("rides", filteredStorageRides);
+        this.storage.setValue("rides", filteredSRides);
     }
 
     /**
@@ -293,7 +298,7 @@ export class RideManager {
      * @return {void}
      */
     private demolishRide(id: number): void {
-        const {playerHash} = this.getRideFromStorage(id) ?? {};
+        const {playerHash} = this.getStorageRide(id) ?? {};
 
         if (!playerHash) {
             return;
@@ -311,7 +316,7 @@ export class RideManager {
 
         this.playerManager.updateStoragePlayer(playerId, "rides", filteredRides);
 
-        this.deleteRideStorage(id);
+        this.deleteStorageRide(id);
     }
 
     /**
@@ -321,60 +326,60 @@ export class RideManager {
      * @param {number} id - the id of the ride
      * @param {string} key - the key to store the value
      * @param {<T>>} value - the value to store
-     * @return {StorageRide | null}
+     * @return {SRide | null}
      */
-    public updateStorageRide<T>(id: number, key: string, value: T): StorageRide | null {
-        const storageRide = this.getRideFromStorage(id);
+    public updateStorageRide<T>(id: number, key: string, value: T): SRide | null {
+        const sRide = this.getStorageRide(id);
 
-        if (!storageRide) {
+        if (!sRide) {
             return null;
         }
 
-        const updatedStorageRide = {
-            ...storageRide,
+        const updatedSRide = {
+            ...sRide,
             [key]: value
         };
 
-        const allStorageRides = this.getAllRidesFromStorage();
-        const filteredStorageRides = allStorageRides.filter((sRide) => sRide.id !== id);
-        filteredStorageRides.push(updatedStorageRide);
+        const allSRides = this.getAllStorageRides();
+        const filteredSRides = allSRides.filter((sRide) => sRide.id !== id);
+        filteredSRides.push(updatedSRide);
 
-        this.storage.setValue("rides", filteredStorageRides);
+        this.storage.setValue("rides", filteredSRides);
 
-        return updatedStorageRide;
+        return updatedSRide;
     }
 
     /**
      * Parses the mapRide and storageRide to output a pluginRide
      *
      * @static
-     * @param {MapRide} mapRide - the data from the ride of the map
-     * @param {StorageRide} storageRide - the data from the ride in the storage
-     * @return {PluginRide}
+     * @param {Ride} mRide - the data from the ride of the map
+     * @param {SRide} sRide - the data from the ride in the storage
+     * @return {IRide}
      */
-    static parseRide(mapRide: MapRide, storageRide: StorageRide): PluginRide {
+    static parseRide(mRide: Ride, sRide: SRide): IRide {
         return {
-            id: mapRide.id,
-            name: mapRide.name,
-            type: mapRide.type,
-            classification: mapRide.classification,
-            status: mapRide.status,
-            mode: mapRide.mode,
-            colourSchemes: mapRide.colourSchemes,
-            stationStyle: mapRide.stationStyle,
-            music: mapRide.music,
-            stations: mapRide.stations,
-            price: mapRide.price,
-            excitement: mapRide.excitement,
-            intensity: mapRide.intensity,
-            nausea: mapRide.nausea,
-            totalCustomers: mapRide.totalCustomers,
-            runningCost: mapRide.runningCost,
-            value: mapRide.value,
-            object: mapRide.object,
-            totalProfit: mapRide.totalProfit,
-            playerHash: storageRide.playerHash,
-            previousTotalProfit: storageRide.previousTotalProfit ?? 0
+            id: sRide.id,
+            name: mRide.name,
+            type: mRide.type,
+            // classification: mapRide.classification,
+            // status: mapRide.status,
+            // mode: mapRide.mode,
+            // colourSchemes: mapRide.colourSchemes,
+            // stationStyle: mapRide.stationStyle,
+            // music: mapRide.music,
+            // stations: mapRide.stations,
+            // price: mapRide.price,
+            // excitement: mapRide.excitement,
+            // intensity: mapRide.intensity,
+            // nausea: mapRide.nausea,
+            // totalCustomers: mapRide.totalCustomers,
+            // runningCost: mapRide.runningCost,
+            // value: mapRide.value,
+            // object: mapRide.object,
+            totalProfit: mRide.totalProfit,
+            playerHash: sRide.playerHash,
+            previousTotalProfit: sRide.previousTotalProfit ?? 0
         };
     }
 }

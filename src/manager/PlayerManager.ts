@@ -1,4 +1,5 @@
 import {find} from "@utils/array";
+
 import {Storage} from "@services/Storage";
 import {Messenger} from "@services/Messenger";
 import {Logger} from "@services/Logger";
@@ -7,18 +8,17 @@ let instantiated = false;
 
 type PlayerManagerOptions = {
     messenger: Messenger
-    logger: Logger
 };
 
-type NetworkPlayer = Omit<Player, "ipAddress" | "ping" | "moneySpent">;
+// type NetworkPlayer = Omit<Player, "ipAddress" | "ping" | "moneySpent">;
 
-type StoragePlayer = {
+type SPLayer = {
     hash: string;
     rides: number[];
     moneySpent: number,
 };
 
-type PluginPlayer = Omit<NetworkPlayer, "publicKeyHash"> & StoragePlayer;
+type IPlayer = SPLayer & Pick<Player, "id" | "name" | "group">;
 
 /**
  * Class representing a manager for all player functionalities.
@@ -58,7 +58,10 @@ export class PlayerManager {
         instantiated = true;
 
         this.messenger = options.messenger;
-        this.logger = options.logger;
+
+        this.logger = new Logger({
+            name: "PlayerManager"
+        });
         this.storage = new Storage({
             name: "PlayerManager"
         });
@@ -83,13 +86,13 @@ export class PlayerManager {
      */
     private watchForNetworkJoin(): void {
         context.subscribe('network.join', ({player}) => {
-            const networkPlayer = this.getPlayerFromNetwork(player);
+            const networkPlayer = this.getNetworkPlayer(player);
 
             if (!networkPlayer) {
                 return;
             }
 
-            const storagePlayer = this.getPlayerFromStorage(networkPlayer.publicKeyHash);
+            const storagePlayer = this.getStoragePlayer(networkPlayer.publicKeyHash);
 
             if (!storagePlayer) {
                 this.handleNewPlayer(networkPlayer);
@@ -104,23 +107,23 @@ export class PlayerManager {
      * Handles new players and executes following actions
      *
      * @private
-     * @param {NetworkPlayer} networkPlayer - the player on the network
+     * @param {Player} nPlayer - the player on the network
      * @return {void}
      */
-    private handleNewPlayer(networkPlayer: NetworkPlayer): void {
-        this.createStoragePlayer(networkPlayer);
-        this.messenger.messageOnConnect(`{NEWLINE}{YELLOW}This server uses the Competitive Plugin.`, networkPlayer.id);
+    private handleNewPlayer(nPlayer: Player): void {
+        this.createStoragePlayer(nPlayer);
+        this.messenger.messageOnConnect(`{NEWLINE}{YELLOW}This server uses the Competitive Plugin.`, nPlayer.id);
     }
 
     /**
      * Handles returning players and executes following actions
      *
      * @private
-     * @param {NetworkPlayer} networkPlayer - the player on the network
+     * @param {Player} nPlayer - the player on the network
      * @return {void}
      */
-    private handleReturningPlayer(networkPlayer: NetworkPlayer): void {
-        this.messenger.messageOnConnect(`{YELLOW}Welcome back, {WHITE}${networkPlayer.name}{WHITE}!`, networkPlayer.id);
+    private handleReturningPlayer(nPlayer: Player): void {
+        this.messenger.messageOnConnect(`{YELLOW}Welcome back, {WHITE}${nPlayer.name}{WHITE}!`, nPlayer.id);
     }
 
     /**
@@ -128,28 +131,28 @@ export class PlayerManager {
      *
      * @public
      * @param {number | string} idOrHash - the id or hash to find the player
-     * @return {PluginPlayer | null}
+     * @return {IPlayer | null}
      */
-    public getPlayer(idOrHash: number | string): PluginPlayer | null {
-        if (idOrHash === -1) {
+    public getPlayer(idOrHash: number | string): IPlayer | null {
+        if (idOrHash === -1 || idOrHash === 0) {
             return null;
         }
 
-        const networkPlayer = this.getPlayerFromNetwork(idOrHash);
+        const nPlayer = this.getNetworkPlayer(idOrHash);
 
-        if (!networkPlayer) {
-            this.logger.error("No network player found!");
+        if (!nPlayer) {
+            this.logger.error(`No network player found with id or hash: ${idOrHash}!`);
             return null;
         }
 
-        const storagePlayer = this.getPlayerFromStorage(networkPlayer.publicKeyHash);
+        const sPlayer = this.getStoragePlayer(nPlayer.publicKeyHash);
 
-        if (!storagePlayer) {
-            this.logger.error("No storage player found!");
+        if (!sPlayer) {
+            this.logger.error(`No storage player found with id or hash: ${idOrHash}!`);
             return null;
         }
 
-        return PlayerManager.parsePlayer(networkPlayer, storagePlayer);
+        return PlayerManager.parsePlayer(nPlayer, sPlayer);
     }
 
     /**
@@ -157,12 +160,12 @@ export class PlayerManager {
      *
      * @public
      * @param {number} id - the id of the ride to search the player upon
-     * @return {PluginPlayer | null}
+     * @return {IPlayer | null}
      */
-    public getPlayerByRide(id: number): PluginPlayer | null {
-        const allStoragePlayers = this.getPlayersFromStorage();
+    public getPlayerByRide(id: number): IPlayer | null {
+        const allSPlayers = this.getAllStoragePlayers();
 
-        const {hash} = find(allStoragePlayers, (sPlayer) => sPlayer.rides.some((ride) => ride == id)) ?? {};
+        const {hash} = find(allSPlayers, (sPlayer) => sPlayer.rides.some((ride) => ride == id)) ?? {};
 
         if (!hash) {
             return null;
@@ -176,23 +179,23 @@ export class PlayerManager {
      *
      * @private
      * @param {number | string} idOrHash - the id or hash to find the player
-     * @return {NetworkPlayer | null}
+     * @return {Player | null}
      */
-    private getPlayerFromNetwork(idOrHash: number | string): NetworkPlayer | null {
-        let networkPlayer;
+    private getNetworkPlayer(idOrHash: number | string): Player | null {
+        let nPlayer;
 
         if (typeof idOrHash === "number") {
-            networkPlayer = find(network.players, ((player) => player.id === idOrHash));
+            nPlayer = find(network.players, ((player) => player.id === idOrHash));
         } else {
-            networkPlayer = find(network.players, ((player) => player.publicKeyHash === idOrHash));
+            nPlayer = find(network.players, ((player) => player.publicKeyHash === idOrHash));
         }
 
-        if (!networkPlayer) {
-            this.logger.error("No network player found!");
+        if (!nPlayer) {
+            this.logger.error(`No network player found with the following has or id: ${idOrHash}!`);
             return null;
         }
 
-        return networkPlayer;
+        return nPlayer;
 
     }
 
@@ -201,42 +204,42 @@ export class PlayerManager {
      *
      * @private
      * @param {string} hash - the hash to find the player
-     * @return {StoragePlayer | null}
+     * @return {SPLayer | null}
      */
-    private getPlayerFromStorage(hash: string): StoragePlayer | null {
-        const storagePlayers = this.getPlayersFromStorage();
-        return find(storagePlayers, ((player) => player.hash === hash));
+    private getStoragePlayer(hash: string): SPLayer | null {
+        const sPlayers = this.getAllStoragePlayers();
+        return find(sPlayers, ((player) => player.hash === hash));
     }
 
     /**
      * Gets all player from the storage
      *
      * @private
-     * @return {StoragePlayer[]}
+     * @return {SPLayer[]}
      */
-    private getPlayersFromStorage(): StoragePlayer[] {
-        const storagePlayers = this.storage.getValue<StoragePlayer[]>("players");
-        return storagePlayers ?? [];
+    private getAllStoragePlayers(): SPLayer[] {
+        const sPlayers = this.storage.getValue<SPLayer[]>("players");
+        return sPlayers ?? [];
     }
 
     /**
      * Creates an new storage player and saves it in the storage based on a network player
      *
      * @private
-     * @param {NetworkPlayer} networkPlayer - the networkPlayer to make a storagePlayer from
-     * @return {StoragePlayer}
+     * @param {Player} nPlayer - the networkPlayer to make a storagePlayer from
+     * @return {SPLayer}
      */
-    private createStoragePlayer(networkPlayer: NetworkPlayer): StoragePlayer {
-        const storagePlayers = this.getPlayersFromStorage();
+    private createStoragePlayer(nPlayer: Player): SPLayer {
+        const sPlayers = this.getAllStoragePlayers();
 
         const storagePlayer = {
-            hash: networkPlayer.publicKeyHash,
+            hash: nPlayer.publicKeyHash,
             rides: [],
             moneySpent: 0
         };
 
-        storagePlayers.push(storagePlayer);
-        this.storage.setValue("players", storagePlayers);
+        sPlayers.push(storagePlayer);
+        this.storage.setValue("players", sPlayers);
 
         return storagePlayer;
     }
@@ -248,52 +251,52 @@ export class PlayerManager {
      * @param {number | string} idOrHash - the id or hash of the player
      * @param {string} key - the key to store the value
      * @param {<T>>} value - the value to store
-     * @return {StoragePlayer | null}
+     * @return {SPLayer | null}
      */
-    public updateStoragePlayer<T>(idOrHash: number | string, key: string, value: T): StoragePlayer | null {
-        const {publicKeyHash} = this.getPlayerFromNetwork(idOrHash) ?? {};
+    public updateStoragePlayer<T>(idOrHash: number | string, key: string, value: T): SPLayer | null {
+        const {publicKeyHash} = this.getNetworkPlayer(idOrHash) ?? {};
 
         if (!publicKeyHash) {
             return null;
         }
 
-        const storagePlayer = this.getPlayerFromStorage(publicKeyHash);
+        const sPlayer = this.getStoragePlayer(publicKeyHash);
 
-        if (!storagePlayer) {
+        if (!sPlayer) {
             return null;
         }
 
-        const updatedStoragePlayer = {
-            ...storagePlayer,
+        const updatedSPlayer = {
+            ...sPlayer,
             [key]: value
         };
 
-        const allStoragePlayers = this.getPlayersFromStorage();
-        const filteredStoragePlayers = allStoragePlayers.filter((sPlayer) => sPlayer.hash !== storagePlayer.hash);
-        filteredStoragePlayers.push(updatedStoragePlayer);
+        const allSPlayers = this.getAllStoragePlayers();
+        const filteredSPlayers = allSPlayers.filter((sPlayer) => sPlayer.hash !== sPlayer.hash);
+        filteredSPlayers.push(updatedSPlayer);
 
-        this.storage.setValue("players", filteredStoragePlayers);
+        this.storage.setValue("players", filteredSPlayers);
 
-        return updatedStoragePlayer;
+        return updatedSPlayer;
     }
 
     /**
      * Parses the storagePlayer and storagePlayer to output a pluginRide
      *
      * @static
-     * @param {NetworkPlayer} networkPlayer - the data from the player of the network
-     * @param {StoragePlayer} storagePlayer - the data from the player in the storage
-     * @return {PluginPlayer}
+     * @param {Player} nPlayer - the data from the player of the network
+     * @param {SPLayer} sPlayer - the data from the player in the storage
+     * @return {IPlayer}
      */
-    static parsePlayer(networkPlayer: NetworkPlayer, storagePlayer: StoragePlayer): PluginPlayer {
+    static parsePlayer(nPlayer: Player, sPlayer: SPLayer): IPlayer {
         return {
-            id: networkPlayer.id,
-            name: networkPlayer.name,
-            group: networkPlayer.group,
-            commandsRan: networkPlayer.commandsRan,
-            moneySpent: storagePlayer.moneySpent ?? 0,
-            hash: storagePlayer.hash,
-            rides: storagePlayer.rides
+            id: nPlayer.id,
+            name: nPlayer.name,
+            group: nPlayer.group,
+            // commandsRan: nPlayer.commandsRan,
+            moneySpent: nPlayer.moneySpent ?? 0,
+            hash: sPlayer.hash,
+            rides: sPlayer.rides
         };
     }
 
@@ -305,17 +308,17 @@ export class PlayerManager {
      * @return {boolean}
      */
     static isServerPlayer(num: number): boolean {
-        return num === 1;
+        return num === 0;
     }
 
     /**
      * Validates if the player is an admin
      *
      * @static
-     * @param {PluginPlayer} player - the player to validate
+     * @param {IPlayer} player - the player to validate
      * @return {boolean}
      */
-    static isAdmin(player: PluginPlayer): boolean {
+    static isAdmin(player: IPlayer): boolean {
         const {permissions}: PlayerGroup = network.getGroup(player.group);
         return permissions.indexOf("kick_player") >= 0;
     }

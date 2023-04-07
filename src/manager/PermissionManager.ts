@@ -1,7 +1,11 @@
-import {PlayerManager} from "@src/manager/PlayerManager";
-import {ACTION_TYPE, TILE_ELEMENT_TYPE} from "@lib/enum";
+import {PlayerManager} from "@manager/PlayerManager";
+
+import {ACTION_TYPE, HOOK_TYPE, TILE_ELEMENT_TYPE} from "@lib/enum";
+
 import {getTileByCoords} from "@utils/map";
+
 import {Messenger} from "@services/Messenger";
+import {Logger} from "@services/Logger";
 
 let instantiated = false;
 
@@ -32,6 +36,12 @@ export class PermissionManager {
      */
     private messenger: Messenger;
     /**
+     * logger used through the manager
+     * @private
+     * @type {Logger}
+     */
+    private logger: Logger;
+    /**
      * a manager which allows the PermissionManager to alter and get players
      * @private
      * @type {PlayerManager}
@@ -46,12 +56,15 @@ export class PermissionManager {
      * @return {PermissionManager}
      */
     constructor(options: PermissionManagerOptions) {
-        if(instantiated) {
+        if (instantiated) {
             throw new Error("UtilityManager can only be instantiated once, and needs to be injected into other classes.");
         }
         instantiated = true;
 
         this.messenger = options.messenger;
+        this.logger = new Logger({
+            name: "PermissionManager"
+        });
         this.playerManager = options.playerManager;
         this.init();
     }
@@ -73,25 +86,30 @@ export class PermissionManager {
      * @return {void}
      */
     private watchForActions(): void {
-        context.subscribe("action.query", (event) => {
+        context.subscribe(HOOK_TYPE.ACTION_QUERY, (event) => {
             const {action, args, player} = event;
 
-            if(PlayerManager.isServerPlayer(player)) {
+            console.log(player);
+
+            if (PlayerManager.isServerPlayer(player)) {
+                console.log('isServer');
                 return;
             }
 
-            if (action === ACTION_TYPE.RIDE_CREATE) {
+            if (action === ACTION_TYPE.RIDE_CREATE || action === ACTION_TYPE.SET_CHEAT) {
                 return;
             }
+
+            console.log(action);
 
             if (RESTRICTED_ACTIONS.indexOf(action as ACTION_TYPE) >= 0) {
                 this.handleRestrictedActions(event);
                 return;
             }
 
-            if (action === ACTION_TYPE.TRACK_REMOVE) {
-                event = this.enhanceEventForTrackRemove(event);
-            }
+            const enhancedEvent = this.enhanceEvent(event);
+
+            console.log(enhancedEvent);
 
             if ('ride' in args) {
                 this.handleRideActions(event);
@@ -117,6 +135,7 @@ export class PermissionManager {
                 errorTitle: 'NOT ALLOWED',
                 errorMessage: 'Only admins can modify the park.'
             };
+            this.logger.warning(`${foundPlayer.name} tried a restricted action: ${event.action}`);
             this.messenger.message('{RED}ERROR: Only admins can modify the park!', player);
         }
     }
@@ -132,26 +151,31 @@ export class PermissionManager {
         const {player, args} = event;
         const foundPlayer = this.playerManager.getPlayer(player);
 
+        console.log(event.action);
+
         if (foundPlayer && 'ride' in args && !foundPlayer.rides.some((ride) => ride === <number>args["ride"]) && !PlayerManager.isAdmin(foundPlayer)) {
             event.result = {
                 error: 1,
                 errorTitle: 'NOT OWNED',
                 errorMessage: 'That ride belongs to another player.'
             };
+            this.logger.warning(`${foundPlayer.name} tried a ride action: ${event.action}, on a ride that is not theirs.`);
             this.messenger.message('{RED}ERROR: {WHITE}That ride/stall doesn\'t belong to you!', player);
         }
     }
 
     /**
-     * Enhances the event for track_remove, because it does not hold any ride information initially.
+     * Enhances the event, because it does not hold any ride information initially.
      *
      * @private
      * @param {GameActionEventArgs} event - the event of the action
      * @return {GameActionEventArgs}
      */
-    private enhanceEventForTrackRemove(event: GameActionEventArgs): GameActionEventArgs {
+    private enhanceEvent(event: GameActionEventArgs): GameActionEventArgs {
         const newEvent = event;
         const {args} = newEvent;
+
+        console.log("enhanceEventForTrackRemove");
 
         if (!('x' in args) || !('y' in args) || !('z' in args) || !('ride' in newEvent.args)) {
             return newEvent;

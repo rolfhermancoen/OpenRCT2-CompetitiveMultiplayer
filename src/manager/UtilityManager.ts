@@ -1,11 +1,9 @@
-import {ACTION_TYPE, HOOK_TYPE} from "@lib/enum";
+import {ACTION_TYPE, CHEAT_TYPE, HOOK_TYPE} from "@lib/enum";
+
 import {Cheater} from "@services/Cheater";
+import {Logger} from "@services/Logger";
 
 let instantiated = false;
-
-type UtilityManagerOptions = {
-    cheater: Cheater
-};
 
 /**
  * Class representing a manager for all utility functionalities.
@@ -13,26 +11,40 @@ type UtilityManagerOptions = {
  */
 export class UtilityManager {
     /**
+     * logger used through the manager
+     * @private
+     * @readonly
+     * @type {Logger}
+     */
+    private readonly logger: Logger;
+    /**
      * cheater service used to cheat with
      * @private
+     * @readonly
      * @type {Cheater}
      */
-    private cheater: Cheater;
+    private readonly cheater: Cheater;
 
     /**
      * Construct a new UtilityManager and checks if none has been instantiated yet, then runs the init function
      *
      * @public
-     * @param {UtilityManagerOptions} options - the options provided when instantiating
      * @return {UtilityManager}
      */
-    constructor(options: UtilityManagerOptions) {
-        if(instantiated) {
+    constructor() {
+        if (instantiated) {
             throw new Error("UtilityManager can only be instantiated once, and needs to be injected into other classes.");
         }
         instantiated = true;
 
-        this.cheater = options.cheater;
+        this.logger = new Logger({
+            name: "UtilityManager"
+        });
+
+        this.cheater = new Cheater({
+            logger: this.logger,
+        });
+
         this.init();
     }
 
@@ -58,6 +70,7 @@ export class UtilityManager {
             const {player, action} = event;
 
             if (player === -1 && action === ACTION_TYPE.RIDE_CREATE) {
+                this.logger.warning("Player tried to place track design.");
                 event.result = {
                     error: 1,
                     errorTitle: 'NO PLAYER INDEX',
@@ -76,26 +89,21 @@ export class UtilityManager {
      * @return {void}
      */
     private enableCheats(): void {
-        // disable vandalism
-        this.cheater.setCheat(13);
+        this.cheater.setCheat(CHEAT_TYPE.DISABLE_VANDALISM);
+        this.cheater.setCheat(CHEAT_TYPE.DISABLE_PLANT_AGING);
+        this.cheater.setCheat(CHEAT_TYPE.DISABLE_ALL_BREAKDOWNS);
+        this.cheater.setCheat(CHEAT_TYPE.DISABLE_RIDE_VALUE_AGING);
+        this.cheater.setCheat(CHEAT_TYPE.IGNORE_RESEARCH_STATUS);
+        this.cheater.setCheat(CHEAT_TYPE.CLEAR_LOAN);
+        this.cheater.setCheat(CHEAT_TYPE.DISABLE_LITTERING);
+        this.cheater.setCheat(CHEAT_TYPE.HAVE_FUN);
+        this.cheater.setCheat(CHEAT_TYPE.SET_FORCED_PARK_RATING, 999);
 
-        // disable plants aging
-        this.cheater.setCheat(25);
-
-        // disable all breakdowns
-        this.cheater.setCheat(9);
-
-        // rides don't decrease in value over time
-        this.cheater.setCheat(43);
-
-        // unlock all rides
-        this.cheater.setCheat(44);
-
-        // clear grass every 1000 ticks
-        context.subscribe('interval.tick', () => {
+        context.subscribe(HOOK_TYPE.INTERVAL_TICK, () => {
             if (date.ticksElapsed % 10000 === 0) {
-                this.cheater.setCheat(23);
+                this.cheater.setCheat(CHEAT_TYPE.SET_GRASS_LENGTH);
             }
         });
+
     }
 }
