@@ -1,4 +1,4 @@
-/// <reference path="../../../lib/openrct2.d.ts" />
+/// <reference path="../../lib/openrct2.d.ts" />
 
 import test from "ava";
 import Mock from "openrct2-mocks";
@@ -6,9 +6,9 @@ import {Storage} from "@services/Storage";
 
 
 const findValueByPrefix = (object: { [name: string]: unknown }, prefix: string): { [p: string]: unknown } => {
-    return Object.keys(object).filter(function(k) {
+    return Object.keys(object).filter(function (k) {
         return k.indexOf(prefix) == 0;
-    }).reduce(function(newData: { [p: string]: unknown }, k) {
+    }).reduce(function (newData: { [p: string]: unknown }, k) {
         newData[k] = object[k];
         return newData;
     }, {});
@@ -24,7 +24,7 @@ test.before(() => {
                     return storage[`${pluginName}_${key}`] as T | undefined;
                 },
                 getAll(namespace?: string): { [p: string]: unknown } {
-                    if(!namespace) {
+                    if (!namespace) {
                         return storage;
                     }
                     return findValueByPrefix(storage, `${pluginName}_${namespace}`);
@@ -113,7 +113,7 @@ test("Can set a value in a collection", (t) => {
     const storage = new Storage({
         name: "StorageName",
     });
-    storage.setValueInCollection("foo", { "bar": 1});
+    storage.setValueInCollection("foo", {"bar": 1});
 
     const value = storage.getValueFromCollection("foo", "bar");
 
@@ -124,8 +124,8 @@ test("Can set a multiple values in a collection", (t) => {
     const storage = new Storage({
         name: "StorageName",
     });
-    storage.setValueInCollection("foo", { "bar": 1});
-    storage.setValueInCollection("foo", { "baz": 2});
+    storage.setValueInCollection("foo", {"bar": 1});
+    storage.setValueInCollection("foo", {"baz": 2});
 
     const barValue = storage.getValueFromCollection("foo", "bar");
     const bazValue = storage.getValueFromCollection("foo", "baz");
@@ -138,8 +138,8 @@ test("Can set a multiple values in a collection and get all values from collecti
     const storage = new Storage({
         name: "StorageName",
     });
-    storage.setValueInCollection("foo", { "bar": 1});
-    storage.setValueInCollection("foo", { "baz": 2});
+    storage.setValueInCollection("foo", {"bar": 1});
+    storage.setValueInCollection("foo", {"baz": 2});
 
     const allCollectionValues = storage.getAllValuesFromCollection("foo");
 
@@ -151,7 +151,7 @@ test("Can set a multiple values in a collection at once", (t) => {
     const storage = new Storage({
         name: "StorageName",
     });
-    storage.setValuesInCollection("foo", { "bar": 1, "baz": 2});
+    storage.setValuesInCollection("foo", {"bar": 1, "baz": 2});
 
     const allCollectionValues = storage.getAllValuesFromCollection("foo");
 
