@@ -14,9 +14,7 @@
     "lint:fix": "eslint --fix ./src --ext .js --ext .ts",
     "gettypes": "curl https://raw.githubusercontent.com/OpenRCT2/OpenRCT2/develop/distribution/openrct2.d.ts > lib/openrct2.d.ts",
     "server": "chmod +x ./server.sh && ./server.sh",
-    "test": "nyc ava",
-    "lock:yarn": "synp --source-file yarn.lock",
-    "lock:npm": "yarn import"
+    "test": "nyc ava"
   },
   "devDependencies": {
     "@ava/typescript": "^4.0.0",
@@ -34,7 +32,6 @@
     "openrct2-mocks": "^0.1.3",
     "platform-folders": "^0.6.0",
     "rollup": "^3.20.2",
-    "synp": "^1.9.10",
     "tslib": "^2.5.0",
     "tsx": "^3.12.6",
     "typescript": "^5.0.3"
