@@ -95,7 +95,7 @@ export class Storage {
      * @return {StorageValues} - values in the storage with prefix filter
      */
     public getValues(prefix: string): StorageValues {
-        const values = this.storage.getAll(prefix);
+        const values = this.storage.getAll(this.parseKey(prefix));
 
         if (Object.keys(values).length === 0) {
             this.logger.warning(`No values found with prefix: ${prefix}`);
@@ -164,7 +164,7 @@ export class Storage {
      * @return {StorageValues} - the values found in the collection
      */
     public getAllValuesFromCollection(collection: string): StorageValues {
-        return this.getValues(this.parseKey(collection));
+        return this.getValues(collection);
     }
 
 
