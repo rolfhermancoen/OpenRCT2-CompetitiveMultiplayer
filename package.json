@@ -13,18 +13,23 @@
     "lint": "eslint ./src --ext .js --ext .ts",
     "lint:fix": "eslint --fix ./src --ext .js --ext .ts",
     "gettypes": "curl https://raw.githubusercontent.com/OpenRCT2/OpenRCT2/develop/distribution/openrct2.d.ts > lib/openrct2.d.ts",
-    "server": "chmod +x ./server.sh && ./server.sh"
+    "server": "chmod +x ./server.sh && ./server.sh",
+    "test": "nyc ava"
   },
   "devDependencies": {
+    "@ava/typescript": "^4.0.0",
     "@rollup/plugin-node-resolve": "^15.0.2",
     "@rollup/plugin-replace": "^5.0.2",
     "@rollup/plugin-terser": "^0.4.0",
     "@rollup/plugin-typescript": "^11.1.0",
     "@typescript-eslint/eslint-plugin": "^5.57.1",
     "@typescript-eslint/parser": "^5.57.1",
+    "ava": "^5.2.0",
     "eslint": "^8.37.0",
     "eslint-plugin-import": "^2.27.5",
     "nodemon": "^2.0.22",
+    "nyc": "^15.1.0",
+    "openrct2-mocks": "^0.1.3",
     "platform-folders": "^0.6.0",
     "rollup": "^3.20.2",
     "tslib": "^2.5.0",
@@ -33,5 +38,20 @@
   },
   "dependencies": {
     "currency.js": "^2.0.4"
+  },
+  "ava": {
+    "extensions": {
+      "ts": "module"
+    },
+    "files": [
+      "src/tests/**/*.tests.ts"
+    ],
+    "nodeArguments": [
+      "--loader=tsx"
+    ],
+    "require": [
+      "./src/tests/_setup.js"
+    ],
+    "verbose": true
   }
 }
