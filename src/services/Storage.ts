@@ -145,7 +145,6 @@ export class Storage {
         return hasValue;
     }
 
-
     /**
      * Gets a value from a collection
      *
@@ -167,7 +166,6 @@ export class Storage {
         return this.getValues(collection);
     }
 
-
     /**
      * Sets a value in a collection in the storage
      *
@@ -184,7 +182,6 @@ export class Storage {
         return this.setValue(this.parseCollectionKey(collection, Object.keys(value)[0]), value[Object.keys(value)[0]]);
     }
 
-
     /**
      * Sets multiple values in a collection in the storage
      *
@@ -198,7 +195,6 @@ export class Storage {
         }
         return values;
     }
-
 
     /**
      * Parses a key string to add a prefix to the key
