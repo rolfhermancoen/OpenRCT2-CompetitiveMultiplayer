@@ -57,9 +57,10 @@ export class Storage {
      * @param {<T>} value - The value to set
      * @return {<T>} - The value that was set
      */
-    public setValue<T extends StorageValue>(key: string, value: T): T {
+    public setValue<T extends StorageValue>(key: string, value: T): T | undefined {
         if (!Storage.isValue(value)) {
             this.logger.error(`Invalid type of value for key ${key}, actual type: ${typeof value}, with value: ${value}`);
+            return undefined;
         }
 
         this.logger.debug(`set ${key} with value: ${value}`);
