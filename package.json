@@ -16,6 +16,14 @@
     "server": "chmod +x ./server.sh && ./server.sh",
     "test": "nyc ava"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rolfhermancoen/OpenRCT2-CompetitiveMultiplayer.git"
+  },
+  "homepage": "https://github.com/rolfhermancoen/OpenRCT2-CompetitiveMultiplayer#readme",
+  "bugs": {
+    "url": "https://github.com/rolfhermancoen/OpenRCT2-CompetitiveMultiplayer/issues"
+  },
   "devDependencies": {
     "@ava/typescript": "^4.0.0",
     "@rollup/plugin-node-resolve": "^15.0.2",
