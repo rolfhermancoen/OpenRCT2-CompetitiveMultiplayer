@@ -2,6 +2,7 @@ import {Logger} from "@services/Logger";
 
 type StorageOptions = {
     name: string;
+    type?: "park" | "shared"
 };
 
 type StorageValue = string | number | boolean;
@@ -34,11 +35,14 @@ export class Storage {
      * @param {StorageOptions} options - the options provided when instantiating
      */
     public constructor(options: StorageOptions) {
+        if (!options.type) {
+            options.type = "park";
+        }
         this.name = options.name;
         this.logger = new Logger({
             name: `Storage_${this.name}`
         });
-        this.storage = context.getParkStorage();
+        this.storage = options.type === "shared" ? context.sharedStorage : context.getParkStorage();
     }
 
     /**
