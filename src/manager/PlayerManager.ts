@@ -42,7 +42,7 @@ export class PlayerManager {
      * @private
      * @type {Storage}
      */
-    private storage: Storage;
+    private storage: Storage<unknown>;
 
     /**
      * Construct a new PlayerManager and checks if none has been instantiated yet, then runs the init function
@@ -207,8 +207,15 @@ export class PlayerManager {
      * @return {SPLayer | null}
      */
     private getStoragePlayer(hash: string): SPLayer | null {
-        const sPlayers = this.getAllStoragePlayers();
-        return find(sPlayers, ((player) => player.hash === hash));
+        const player = this.storage.getValueFromCollection<SPLayer>("players", hash);
+
+        if(!player) {
+            this.logger.warning(`No player found in storage with hash: ${hash}`);
+            return null;
+        }
+
+        this.logger.debug(`getStoragePlayer with hash: ${hash} returns player: ${player}`);
+        return player;
     }
 
     /**
@@ -218,8 +225,8 @@ export class PlayerManager {
      * @return {SPLayer[]}
      */
     private getAllStoragePlayers(): SPLayer[] {
-        const sPlayers = this.storage.getValue<SPLayer[]>("players");
-        return sPlayers ?? [];
+        // const sPlayers = this.storage.getAllValuesFromCollection<SPLayer[]>("players");
+        return  [];
     }
 
     /**

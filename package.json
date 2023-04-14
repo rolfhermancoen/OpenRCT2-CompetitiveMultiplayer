@@ -45,7 +45,8 @@
     "typescript": "^5.0.3"
   },
   "dependencies": {
-    "currency.js": "^2.0.4"
+    "currency.js": "^2.0.4",
+    "lodash": "^4.17.21"
   },
   "ava": {
     "extensions": {

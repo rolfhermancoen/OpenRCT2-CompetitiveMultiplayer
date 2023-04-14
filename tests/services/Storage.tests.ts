@@ -39,141 +39,184 @@ test.before(() => {
     });
 });
 
-test('Creates a valid Storage', t => {
+test('new Storage(): default', t => {
     const storage = new Storage({
         name: "StorageName",
     });
     t.not(storage, undefined);
-
-    const storageName = storage.getStorageName();
-    t.is(storageName, "StorageName");
+    t.is(storage.getStorageName(), "StorageName");
+    t.is(storage.getStorageType(), "park");
 });
 
-test('Can set a value in Storage', t => {
+test('new Storage(): park', t => {
+    const storage = new Storage({
+        name: "StorageName",
+        type: "park"
+    });
+    t.is(storage.getStorageType(), "park");
+});
+
+test('new Storage(): shared', t => {
+    const storage = new Storage({
+        name: "StorageName",
+        type: "shared"
+    });
+    t.is(storage.getStorageType(), "shared");
+});
+
+test('getValue()', (t) => {
+    const storage = new Storage({
+        name: "StorageName",
+        initialData: [
+            {key: "foo", value: "bar"}
+        ]
+    });
+
+    t.is(storage.getValue("foo"), "bar");
+});
+
+test('setValue()', t => {
     const storage = new Storage({
         name: "StorageName",
     });
     storage.setValue("foo", "bar");
 
-    const isSet = storage.isValueSet("foo");
-
-    t.is(isSet, true);
+    t.is(storage.getValue("foo"), "bar");
 });
 
-test('Can set a value in Storage and update it', t => {
+test('setValue(): update', t => {
     const storage = new Storage({
         name: "StorageName",
+        initialData: [
+            {key: "foo", value: "bar"}
+        ]
     });
-    storage.setValue("foo", "bar");
 
-    const value = storage.getValue("foo");
-
-    t.is(value, "bar");
+    t.is(storage.getValue("foo"), "bar");
 
     storage.setValue("foo", "baz");
 
-    const updatedValue = storage.getValue("foo");
-
-    t.is(updatedValue, "baz");
+    t.is(storage.getValue("foo"), "baz");
 });
 
-test('Can set a value in Storage and delete it', t => {
+test('deleteValue()', t => {
     const storage = new Storage({
         name: "StorageName",
+        initialData: [
+            {key: "foo", value: "bar"}
+        ]
     });
-    storage.setValue("foo", "bar");
-
-    const value = storage.getValue("foo");
-
-    t.is(value, "bar");
 
     storage.deleteValue("foo");
 
-    const updatedValue = storage.getValue("foo");
-
-    t.is(updatedValue, undefined);
+    t.is(storage.getValue("foo"), undefined);
 });
 
-test("Can set multiple values in Storage and getAll", (t) => {
+test("isValueSet()", (t) => {
     const storage = new Storage({
         name: "StorageName",
+        initialData: [
+            {key: "foo", value: "bar"}
+        ]
     });
-    storage.setValue("foo", 1);
-    storage.setValue("bar", 2);
-    storage.setValue("baz", 3);
 
-    const allValues = storage.getAllValues();
+    t.is(storage.isValueSet("foo"), true);
 
-    t.is(allValues["CompetitiveMultiplayer_StorageName_foo"], 1);
-    t.is(allValues["CompetitiveMultiplayer_StorageName_bar"], 2);
-    t.is(allValues["CompetitiveMultiplayer_StorageName_baz"], 3);
+    storage.deleteValue("foo");
+
+    t.is(storage.isValueSet("foo"), false);
 });
 
-test("Can set a value in a collection", (t) => {
+test("getCollection()", (t) => {
     const storage = new Storage({
         name: "StorageName",
+        initialData: [
+            {key: "foo_bar", value: "baz"},
+            {key: "foo_ava", value: "strong"}
+        ]
     });
-    storage.setValueInCollection("foo", {"bar": 1});
 
-    const value = storage.getValueFromCollection("foo", "bar");
-
-    t.is(value, 1);
+    t.deepEqual(storage.getCollection("foo"), [{value: 'baz', key: 'bar'}, {value: 'strong', key: 'ava'}]);
 });
 
-test("Can set a multiple values in a collection", (t) => {
+test("getValueFromCollection()", (t) => {
     const storage = new Storage({
         name: "StorageName",
+        initialData: [
+            {key: "foo_bar", value: "baz"},
+            {key: "foo_ava", value: "strong"}
+        ]
     });
-    storage.setValueInCollection("foo", {"bar": 1});
-    storage.setValueInCollection("foo", {"baz": 2});
 
-    const barValue = storage.getValueFromCollection("foo", "bar");
-    const bazValue = storage.getValueFromCollection("foo", "baz");
-
-    t.is(barValue, 1);
-    t.is(bazValue, 2);
+    t.is(storage.getValueFromCollection("foo", "bar"), "baz");
+    t.is(storage.getValueFromCollection("foo", "ava"), "strong");
 });
 
-test("Can set a multiple values in a collection and get all values from collection", (t) => {
-    const storage = new Storage({
-        name: "StorageName",
-    });
-    storage.setValueInCollection("foo", {"bar": 1});
-    storage.setValueInCollection("foo", {"baz": 2});
-
-    const allCollectionValues = storage.getAllValuesFromCollection("foo");
-
-    t.is(allCollectionValues["CompetitiveMultiplayer_StorageName_foo_bar"], 1);
-    t.is(allCollectionValues["CompetitiveMultiplayer_StorageName_foo_baz"], 2);
-});
-
-test("Can set a multiple values in a collection at once", (t) => {
-    const storage = new Storage({
-        name: "StorageName",
-    });
-    storage.setValuesInCollection("foo", {"bar": 1, "baz": 2});
-
-    const allCollectionValues = storage.getAllValuesFromCollection("foo");
-
-    t.is(allCollectionValues["CompetitiveMultiplayer_StorageName_foo_bar"], 1);
-    t.is(allCollectionValues["CompetitiveMultiplayer_StorageName_foo_baz"], 2);
-});
-
-
-test("Parses the correct key", (t) => {
+test("setCollection()", (t) => {
     const storage = new Storage({
         name: "StorageName",
     });
 
-    const fullKey = storage.parseKey("foo");
+    storage.setCollection("foo", [{key: "bar", value: "baz"}, {key: "ava", value: "strong"}]);
+
+
+    t.deepEqual(storage.getCollection("foo"), [{value: 'baz', key: 'bar'}, {value: 'strong', key: 'ava'}]);
+});
+
+test("deleteCollection()", (t) => {
+    const storage = new Storage({
+        name: "StorageName",
+        initialData: [
+            {key: "foo_bar", value: "baz"},
+            {key: "foo_ava", value: "strong"}
+        ]
+    });
+
+    storage.deleteCollection("foo");
+    t.is(storage.getCollection("foo"), undefined);
+});
+
+test("deleteCollectionValue()", (t) => {
+    const storage = new Storage({
+        name: "StorageName",
+        initialData: [
+            {key: "foo_bar", value: "baz"},
+            {key: "foo_ava", value: "strong"}
+        ]
+    });
+
+    storage.deleteCollectionValue("foo", "bar");
+    t.deepEqual(storage.getCollection("foo"), [{key: "ava", value: "strong"}]);
+});
+
+test("addPrefix()", (t) => {
+    const storage = new Storage({
+        name: "StorageName",
+    });
+
+    const fullKey = storage.addPrefix("foo");
     t.is(fullKey, "StorageName_foo");
 });
 
-test("Parses the correct collection key", (t) => {
+test("concatKeys()", (t) => {
     const storage = new Storage({
         name: "StorageName",
     });
 
-    const fullCollectionKey = storage.parseCollectionKey("foo", "bar");
+    const fullCollectionKey = storage.concatKeys("foo", "bar");
     t.is(fullCollectionKey, "foo_bar");
+});
+
+test("parseValueObjectIntoCollection()", (t) => {
+    const storage = new Storage({
+        name: "StorageName",
+    });
+
+    const valueObject = {"baz": "bar", "ava": "strong"};
+
+    t.deepEqual(storage.parseValueObjectIntoCollection(valueObject), [{value: 'bar', key: 'baz'}, {
+        value: 'strong',
+        key: 'ava'
+    }]);
+
 });

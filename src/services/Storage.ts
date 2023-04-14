@@ -1,23 +1,31 @@
 import {Logger} from "@services/Logger";
 
-type StorageOptions = {
+type StorageType = "park" | "shared";
+
+type StorageOptions<T> = {
     name: string;
-    type?: "park" | "shared"
+    type?: StorageType;
+    initialData?: Collection<T>;
 };
 
-type StorageValue = string | number | boolean;
-
-type StorageValues = { [key: string]: StorageValue };
+type Value<T> = T;
+type ValueObject<T> = { [key: string]: T };
+type CollectionValue<T> = { key: string, value: Value<T> };
+type Collection<T> = Array<CollectionValue<T>>;
 
 /**
  * Class representing storage.
- * @class
  */
-export class Storage {
+export class Storage<T> {
     /**
      * name used for prefixing the keys for the storage
      */
     private readonly name: string;
+
+    /**
+     * name used for prefixing the keys for the storage
+     */
+    private readonly storageType: StorageType;
 
     /**
      * storage used throughout the class
@@ -34,15 +42,24 @@ export class Storage {
      *
      * @param {StorageOptions} options - the options provided when instantiating
      */
-    public constructor(options: StorageOptions) {
+    public constructor(options: StorageOptions<T>) {
         if (!options.type) {
             options.type = "park";
         }
+        this.storageType = options.type;
+
+
         this.name = options.name;
         this.logger = new Logger({
             name: `Storage_${this.name}`
         });
-        this.storage = options.type === "shared" ? context.sharedStorage : context.getParkStorage();
+
+
+        this.storage = this.storageType === "shared" ? context.sharedStorage : context.getParkStorage();
+        if (options.initialData && options.initialData.length !== 0) {
+            this.setInitialData(options.initialData);
+        }
+
     }
 
     /**
@@ -51,25 +68,43 @@ export class Storage {
      * @return {string} - The name of the storage
      */
     public getStorageName(): string {
+        this.logger.debug(`[getStorageName] ${this.name}`);
         return this.name;
     }
+
+    /**
+     *
+     */
+    public getStorageType(): StorageType {
+        this.logger.debug(`[getStorageType] ${this.storageType}`);
+        return this.storageType;
+    }
+
+    /**
+     *
+     * @param data
+     */
+    public setInitialData<T>(data: Collection<T>): void {
+        for (let i = 0; i < data.length; i++) {
+            this.setValue(data[i].key, data[i].value);
+        }
+    }
+
+    /**
+     * VALUE
+     * A value is the most basic way of data in the storage, it is generic typed, so any kind of data can be stored.
+     */
 
     /**
      * Sets a value in the storage through the use of a key and a value
      *
      * @param {string} key - The key to set the value upon
-     * @param {<T>} value - The value to set
-     * @return {<T>} - The value that was set
+     * @param {Value} value - The value to set
+     * @return {Value} - The value that was set
      */
-    public setValue<T extends StorageValue>(key: string, value: T): T | undefined {
-        if (!Storage.isValue(value)) {
-            this.logger.error(`Invalid type of value for key ${key}, actual type: ${typeof value}, with value: ${value}`);
-            return undefined;
-        }
-
-        this.logger.debug(`set ${key} with value: ${value}`);
-        this.storage.set(this.parseKey(key), value);
-
+    public setValue<T>(key: string, value: Value<T>): Value<T> | undefined {
+        this.storage.set(this.addPrefix(key), value);
+        this.logger.debug(`[setValue] ${key} with value: ${value}`);
         return value;
     }
 
@@ -77,47 +112,13 @@ export class Storage {
      * Retrieves a value from the storage through the use of a key
      *
      * @param {string} key - The key containing the value
-     * @param {<T> | undefined} defaultValue - optional default value
-     * @return {<T> | undefined} - the value or undefined if nothing is found
+     * @param {Value | undefined} defaultValue - optional default value
+     * @return {Value | undefined} - the value or undefined if nothing is found
      */
-    public getValue<T extends StorageValue>(key: string, defaultValue?: T): T | undefined {
-        const value = defaultValue ? this.storage.get<T>(this.parseKey(key), defaultValue) : this.storage.get<T>(this.parseKey(key));
-
-        if (value !== undefined && !Storage.isValue(value)) {
-            this.logger.error(`Invalid type of value for key ${key}, actual type: ${typeof value}, with value: ${value}`);
-            return undefined;
-        }
-
-        this.logger.debug(`get ${key}, ${defaultValue ? `with defaultValue: ${defaultValue},` : ''} results: ${value}`);
+    public getValue<T>(key: string, defaultValue?: Value<T>): Value<T> | undefined {
+        const value = defaultValue ? this.storage.get<T>(this.addPrefix(key), defaultValue) : this.storage.get<T>(this.addPrefix(key));
+        this.logger.debug(`[getValue] ${key}, ${defaultValue ? `with defaultValue: ${defaultValue},` : ''} results: ${value}`);
         return value;
-    }
-
-    /**
-     * Gets all the values in the storage with a prefix filter
-     *
-     * @param {string} prefix - the prefix to filter upon
-     * @return {StorageValues} - values in the storage with prefix filter
-     */
-    public getValues(prefix: string): StorageValues {
-        const values = this.storage.getAll(this.parseKey(prefix));
-
-        if (Object.keys(values).length === 0) {
-            this.logger.warning(`No values found with prefix: ${prefix}`);
-        }
-
-        this.logger.debug(`getValues, with prefix: ${prefix}, results: ${values}`);
-        return values;
-    }
-
-    /**
-     * Gets all the values in the storage
-     *
-     * @return {StorageValues} - all values in the storage
-     */
-    public getAllValues(): StorageValues {
-        const values = this.storage.getAll();
-        this.logger.debug(`getAllValues, results: ${values}`);
-        return values;
     }
 
     /**
@@ -128,11 +129,11 @@ export class Storage {
      */
     public deleteValue(key: string): boolean {
         if (this.isValueSet(key)) {
-            this.logger.debug(`delete ${key}`);
-            this.storage.set(this.parseKey(key), undefined);
+            this.logger.debug(`[deleteValue] ${key}`);
+            this.storage.set(this.addPrefix(key), undefined);
             return true;
         } else {
-            this.logger.debug(`${key} not found, no value deleted`);
+            this.logger.debug(`[deleteValue] ${key} not found, no value deleted`);
             return false;
         }
     }
@@ -144,9 +145,81 @@ export class Storage {
      * @return {boolean} - if the value was set or not
      */
     public isValueSet(key: string): boolean {
-        const hasValue = this.storage.has(this.parseKey(key));
-        this.logger.debug(`has ${key}, results ${hasValue}`);
+        const hasValue = this.storage.has(this.addPrefix(key));
+        this.logger.debug(`[isValueSet] ${key}, results ${hasValue}`);
         return hasValue;
+    }
+
+    /**
+     * COLLECTION
+     * A collection is basically a key with multiple keys with values in the storage,
+     * through the use of the methods in the Storage class, it is possible to work more easier with a collection of values.
+     * Single values are still returned as a generic type, but multiple values are returned in an array of objects, with the key and value as properties.
+     */
+
+    /**
+     *
+     * @param {string} collection
+     * @param {Collection} values
+     * @return {Collection} - the values that were set
+     */
+    public setCollection<T>(collection: string, values: Collection<T>): Collection<T> {
+        const valueObject = this.setCollectionValues(collection, values);
+        this.logger.debug(`[setCollection]key ${collection} with values: ${values}`);
+        return valueObject;
+    }
+
+
+    /**
+     * Sets a value in a collection in the storage
+     *
+     * @param {string} collection - The key to check for the value
+     * @param {string} key - The key to check for the value
+     * @param {<T>} value - The key to check for the value
+     * @return {<T> | undefined} - the value that was set
+     */
+    public setCollectionValue<T>(collection: string, key: string, value: T): T | undefined {
+        this.logger.debug(`[setCollectionValue], collection: ${collection}, key: ${key}, value: ${value}.`);
+        return this.setValue<T>(this.concatKeys(collection, key), value);
+    }
+
+
+    /**
+     * Sets multiple values in a collection in the storage
+     *
+     * @param {string} collection - The key to check for the value
+     * @param {Collection} values - Multiple values to set in the collection
+     * @return {Collection} - the values that were set
+     */
+    public setCollectionValues<T>(collection: string, values: Collection<T>): Collection<T> {
+        this.logger.debug(`[setCollectionValues] collection: ${collection}, values: ${values}`);
+        for (let i = 0; i < values.length; i++) {
+            this.setCollectionValue(collection, values[i].key, values[i].value);
+        }
+        return values;
+    }
+
+
+    /**
+     *
+     * @param {string} collection - collection key
+     * @return {Collection} - array of values
+     */
+    public getCollection<T>(collection: string): Collection<T> | undefined {
+        const valueObject = this.storage.getAll(this.addPrefix(collection));
+
+        if (!valueObject || Object.keys(valueObject).length === 0) {
+            this.logger.warning(`No values found with collection key: ${collection}`);
+            return undefined;
+        }
+
+        this.logger.debug(`[getCollection], with key: ${collection}, results: ${valueObject}`);
+        const collectionArray = this.parseValueObjectIntoCollection(valueObject);
+
+        if (collectionArray.length === 0) {
+            return undefined;
+        }
+        return collectionArray;
     }
 
     /**
@@ -156,81 +229,106 @@ export class Storage {
      * @param {string} key - The key to get the value from
      * @return {<T> | undefined} - the value or undefined if nothing was found
      */
-    public getValueFromCollection<T extends StorageValue>(collection: string, key: string): T | undefined {
-        return this.getValue<T>(this.parseCollectionKey(collection, key));
+    public getValueFromCollection<T>(collection: string, key: string): T | undefined {
+        const value = this.getValue<T>(this.concatKeys(collection, key));
+        this.logger.debug(`[getValueFromCollection], collection: ${collection}, key: ${key}.`);
+        return value;
     }
 
     /**
-     * Gets all values from a collection
      *
-     * @param {string} collection - The collection to get the values from
-     * @return {StorageValues} - the values found in the collection
+     * @param {string} collection - collection key to delete on
+     * @return {boolean}
      */
-    public getAllValuesFromCollection(collection: string): StorageValues {
-        return this.getValues(collection);
-    }
+    public deleteCollection(collection: string): boolean {
+        const collectionValues = this.getCollection(collection) ?? [];
 
-    /**
-     * Sets a value in a collection in the storage
-     *
-     * @param {string} collection - The key to check for the value
-     * @param {string} value - The key to check for the value
-     * @return {StorageValue} - the value that was set
-     */
-    public setValueInCollection(collection: string, value: StorageValues): StorageValue | undefined {
-        if (Object.keys(value).length !== 1) {
-            this.logger.error("setValueInCollection called with more than 1 key in value");
-            return undefined;
+        if (collectionValues.length === 0) {
+            return false;
         }
 
-        return this.setValue(this.parseCollectionKey(collection, Object.keys(value)[0]), value[Object.keys(value)[0]]);
+        for (let i = 0; i < collectionValues.length; i++) {
+            this.deleteValue(this.concatKeys(collection, collectionValues[i].key));
+        }
+        this.logger.debug(`[deleteCollection] ${collection} deleted, with ${collectionValues.length} values.`);
+        return true;
     }
 
     /**
-     * Sets multiple values in a collection in the storage
      *
-     * @param {string} collection - The key to check for the value
-     * @param {string} values - Multiple values to set in the collection
-     * @return {StorageValues} - the values that were set
+     * @param {string} collection - collection key to use to get the value on
+     * @param {string} key - key inside the collection to delete
+     * @return {boolean}
      */
-    public setValuesInCollection(collection: string, values: StorageValues): StorageValues {
-        for (const key in values) {
-            this.setValueInCollection(collection, {[key]: values[key]});
-        }
-        return values;
+    public deleteCollectionValue(collection: string, key: string): boolean {
+        const deleted = this.deleteValue(this.concatKeys(collection, key));
+        this.logger.debug(`[deleteCollectionValue] ${collection} ${key}: ${deleted}`);
+        return deleted;
+    }
+
+    /**
+     * UTILITIES
+     */
+
+    /**
+     *
+     * @param {string} key
+     * @return {string}
+     */
+    public addPrefix(key: string): string {
+        const prefixed = `${this.getStorageName()}_${key}`;
+        this.logger.debug(`[addPrefix]: prefix: ${this.getStorageName()}, subKey: ${key}, result: ${prefixed}`);
+        return prefixed;
     }
 
     /**
      * Parses a key string to add a prefix to the key
      *
      * @param {string} key - The key to assert the storage upon
-     * @param {string | undefined} prefix - an optional prefix
+     * @param {string | undefined} subKey - an optional prefix
      * @return {string}
      */
-    public parseKey(key: string, prefix: string = this.name): string {
-        return `${prefix}_${key}`;
+    public concatKeys(key: string, subKey: string): string {
+        const concatKeys = `${key}_${subKey}`;
+        this.logger.debug(`[concatKeys]: key: ${key}, subKey: ${subKey}, result: ${concatKeys}`);
+        return concatKeys;
     }
+
+
+    // TEMPORARY HERE FOR NOW
+    // /**
+    //  *
+    //  * @param {Collection} array - array to parse into an object
+    //  * @return {ValueObject}
+    //  */
+    // private parseCollectionIntoValueObject<T>(array: Collection<T>): ValueObject<T> {
+    //     const object: ValueObject<T> = {};
+    //
+    //     for (let i = 0; i < array.length; ++i) {
+    //         const objectKey = array[i].key;
+    //         object[objectKey] = array[i].value;
+    //     }
+    //
+    //     this.logger.debug(`[parseCollectionIntoValueObject] array: ${array}, result ${object}`);
+    //     return object;
+    // }
 
     /**
-     * Parses a key string to add a prefix to the key for a collection
      *
-     * @param {string} collection - The collection key
-     * @param {string} key - The key to assert the storage upon
-     * @return {string}
+     * @param {ValueObject} object - object to parse into an collection
+     * @return {Collection}
      */
-    public parseCollectionKey(collection: string, key: string): string {
-        return `${collection}_${key}`;
-    }
+    public parseValueObjectIntoCollection<T>(object: ValueObject<T>): Collection<T> {
+        const array = Object.keys(object).map((key) => {
+            const value = object[key];
 
-    /**
-     * Checks if a value is of a valid type
-     *
-     * @param {unknown} value - The value to check
-     * @return {boolean}
-     */
-    static isValue(value: unknown): value is string | number | boolean {
-        return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+            return {
+                value: value,
+                key: key.split("_").pop() as string
+            };
+        }).filter((entry) => entry.value !== undefined);
+        this.logger.debug(`[parseValueObjectIntoCollection] object: ${object}, array ${array}`);
+        return array;
     }
-
 }
 
