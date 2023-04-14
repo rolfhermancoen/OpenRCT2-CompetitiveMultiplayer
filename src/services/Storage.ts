@@ -1,4 +1,5 @@
 import {Logger} from "@services/Logger";
+import {combine} from "@utils/object";
 
 type StorageType = "park" | "shared";
 
@@ -10,7 +11,7 @@ type StorageOptions<T> = {
 
 type Value<T> = T;
 type ValueObject<T> = { [key: string]: T };
-type CollectionValue<T> = { key: string, value: Value<T> };
+export type CollectionValue<T> = { key: string, value: Value<T> };
 type Collection<T> = Array<CollectionValue<T>>;
 
 /**
@@ -23,7 +24,7 @@ export class Storage<T> {
     private readonly name: string;
 
     /**
-     * name used for prefixing the keys for the storage
+     * type used to instantiate the storage
      */
     private readonly storageType: StorageType;
 
@@ -41,6 +42,7 @@ export class Storage<T> {
      * Construct a new storage
      *
      * @param {StorageOptions} options - the options provided when instantiating
+     * @return {Storage}
      */
     public constructor(options: StorageOptions<T>) {
         if (!options.type) {
@@ -102,7 +104,7 @@ export class Storage<T> {
      * @param {Value} value - The value to set
      * @return {Value} - The value that was set
      */
-    public setValue<T>(key: string, value: Value<T>): Value<T> | undefined {
+    public setValue<T>(key: string, value: Value<T>): Value<T> {
         this.storage.set(this.addPrefix(key), value);
         this.logger.debug(`[setValue] ${key} with value: ${value}`);
         return value;
@@ -178,7 +180,7 @@ export class Storage<T> {
      * @param {<T>} value - The key to check for the value
      * @return {<T> | undefined} - the value that was set
      */
-    public setCollectionValue<T>(collection: string, key: string, value: T): T | undefined {
+    public setCollectionValue<T>(collection: string, key: string, value: T): Value<T> {
         this.logger.debug(`[setCollectionValue], collection: ${collection}, key: ${key}, value: ${value}.`);
         return this.setValue<T>(this.concatKeys(collection, key), value);
     }
@@ -229,10 +231,15 @@ export class Storage<T> {
      * @param {string} key - The key to get the value from
      * @return {<T> | undefined} - the value or undefined if nothing was found
      */
-    public getValueFromCollection<T>(collection: string, key: string): T | undefined {
+    public getValueFromCollection<T>(collection: string, key: string): CollectionValue<T> | undefined {
         const value = this.getValue<T>(this.concatKeys(collection, key));
         this.logger.debug(`[getValueFromCollection], collection: ${collection}, key: ${key}.`);
-        return value;
+
+        if (!value) {
+            return undefined;
+        }
+
+        return combine<CollectionValue<T>>({value}, {key});
     }
 
     /**
@@ -293,25 +300,6 @@ export class Storage<T> {
         this.logger.debug(`[concatKeys]: key: ${key}, subKey: ${subKey}, result: ${concatKeys}`);
         return concatKeys;
     }
-
-
-    // TEMPORARY HERE FOR NOW
-    // /**
-    //  *
-    //  * @param {Collection} array - array to parse into an object
-    //  * @return {ValueObject}
-    //  */
-    // private parseCollectionIntoValueObject<T>(array: Collection<T>): ValueObject<T> {
-    //     const object: ValueObject<T> = {};
-    //
-    //     for (let i = 0; i < array.length; ++i) {
-    //         const objectKey = array[i].key;
-    //         object[objectKey] = array[i].value;
-    //     }
-    //
-    //     this.logger.debug(`[parseCollectionIntoValueObject] array: ${array}, result ${object}`);
-    //     return object;
-    // }
 
     /**
      *

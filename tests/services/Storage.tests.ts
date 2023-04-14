@@ -31,7 +31,7 @@ test.before(() => {
                 }, has(key: string): boolean {
                     return Boolean(storage[`${pluginName}_${key}`]);
                 }, set<T>(key: string, value: T): void {
-                    if(value === undefined) {
+                    if (value === undefined) {
                         delete storage[`${pluginName}_${key}`];
                     }
                     storage[`${pluginName}_${key}`] = value;
@@ -151,8 +151,8 @@ test("getValueFromCollection()", (t) => {
         ]
     });
 
-    t.is(storage.getValueFromCollection("foo", "bar"), "baz");
-    t.is(storage.getValueFromCollection("foo", "ava"), "strong");
+    t.deepEqual(storage.getValueFromCollection("foo", "bar"), {value: "baz", key: "bar",});
+    t.deepEqual(storage.getValueFromCollection("foo", "ava"), {key: "ava", value: "strong"});
 });
 
 test("setCollection()", (t) => {

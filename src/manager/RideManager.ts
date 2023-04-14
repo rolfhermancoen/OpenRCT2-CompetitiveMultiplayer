@@ -26,6 +26,7 @@ type RideManagerOptions = {
  * @class
  */
 export class RideManager {
+
     /**
      * a manager which allows the RideManager to alter and get players
      * @private
@@ -62,6 +63,8 @@ export class RideManager {
 
         this.playerManager = options.playerManager;
 
+        console.log(this.playerManager);
+
         this.logger = new Logger({
             name: "RideManager"
         });
@@ -97,44 +100,44 @@ export class RideManager {
             }
 
             if (action === ACTION_TYPE.RIDE_CREATE) {
-                this.handleRideCreateAction(event);
+                // this.handleRideCreateAction(event);
                 return;
             }
 
             if (action === ACTION_TYPE.RIDE_DEMOLISH) {
-                this.handleRideDemolishAction(event);
+                // this.handleRideDemolishAction(event);
                 return;
             }
         });
     }
 
-    /**
-     * Handles the ride_create action by the player, where it forwards it to the createRide function.
-     *
-     * @private
-     * @param {GameActionEventArgs} event - the event given by the action of the player
-     * @return {void}
-     */
-    private handleRideCreateAction({player, result}: GameActionEventArgs): void {
-        if (!('ride' in result)) {
-            return;
-        }
-        this.createRide(player, <number>result['ride']);
-    }
+    // /**
+    //  * Handles the ride_create action by the player, where it forwards it to the createRide function.
+    //  *
+    //  * @private
+    //  * @param {GameActionEventArgs} event - the event given by the action of the player
+    //  * @return {void}
+    //  */
+    // private handleRideCreateAction({player, result}: GameActionEventArgs): void {
+    //     if (!('ride' in result)) {
+    //         return;
+    //     }
+    //     this.createRide(player, <number>result['ride']);
+    // }
 
-    /**
-     * Handles the ride_demolish action by the player, where it forwards it to the demolishRide function.
-     *
-     * @private
-     * @param {GameActionEventArgs} event - the event given by the action of the player
-     * @return {void}
-     */
-    private handleRideDemolishAction({args}: GameActionEventArgs): void {
-        if (!('ride' in args)) {
-            return;
-        }
-        this.demolishRide(<number>args['ride']);
-    }
+    // /**
+    //  * Handles the ride_demolish action by the player, where it forwards it to the demolishRide function.
+    //  *
+    //  * @private
+    //  * @param {GameActionEventArgs} event - the event given by the action of the player
+    //  * @return {void}
+    //  */
+    // private handleRideDemolishAction({args}: GameActionEventArgs): void {
+    //     if (!('ride' in args)) {
+    //         return;
+    //     }
+    //     this.demolishRide(<number>args['ride']);
+    // }
 
     /**
      * Gets the ride from both the map and storage
@@ -199,125 +202,125 @@ export class RideManager {
         const sRides = this.storage.getValue<SRide[]>("rides");
         return sRides ?? [];
     }
+    //
+    // /**
+    //  * Creates a storageRide entry in the rides array on storage
+    //  *
+    //  * @private
+    //  * @param {string} playerHash - the hash of the player to connect the ride to
+    //  * @param {number} rideId - the id of the ride
+    //  * @return {SRide}
+    //  */
+    // private createRideStorage(playerHash: string, rideId: number): SRide {
+    //     const sRides = this.getAllStorageRides();
+    //
+    //     const newSRide = {
+    //         id: rideId,
+    //         playerHash,
+    //         previousTotalProfit: 0
+    //     };
+    //
+    //     sRides.push(newSRide);
+    //     this.storage.setValue("rides", sRides);
+    //
+    //     return newSRide;
+    // }
+    //
+    // /**
+    //  * Deletes a rideStorage entry from storage
+    //  *
+    //  * @private
+    //  * @param {number} id - the id of the ride
+    //  * @return {void}
+    //  */
+    // private deleteStorageRide(id: number): void {
+    //     const sRides = this.getAllStorageRides();
+    //
+    //     const filteredSRides = sRides.filter((ride) => ride.id !== id);
+    //
+    //     this.storage.setValue("rides", filteredSRides);
+    // }
 
-    /**
-     * Creates a storageRide entry in the rides array on storage
-     *
-     * @private
-     * @param {string} playerHash - the hash of the player to connect the ride to
-     * @param {number} rideId - the id of the ride
-     * @return {SRide}
-     */
-    private createRideStorage(playerHash: string, rideId: number): SRide {
-        const sRides = this.getAllStorageRides();
+    // /**
+    //  * Handles the creation of a ride and all following actions
+    //  *
+    //  * @private
+    //  * @param {number} playerId - the id of the player that has built the ride
+    //  * @param {number} rideId - the id of the ride
+    //  * @return {void}
+    //  */
+    // private createRide(playerId: number, rideId: number): void {
+    //     const {rides, hash, name} = this.playerManager.getPlayer(playerId) ?? {};
+    //
+    //     if (!rides || !hash || !name) {
+    //         return;
+    //     }
+    //
+    //     if (!rides.some((id) => id === rideId)) {
+    //         rides.push(rideId);
+    //
+    //         this.playerManager.updateStoragePlayer(playerId, "rides", rides);
+    //     }
+    //
+    //     this.createRideStorage(hash, rideId);
+    //     this.setRideName(playerId, name, rideId);
+    // }
 
-        const newSRide = {
-            id: rideId,
-            playerHash,
-            previousTotalProfit: 0
-        };
-
-        sRides.push(newSRide);
-        this.storage.setValue("rides", sRides);
-
-        return newSRide;
-    }
-
-    /**
-     * Deletes a rideStorage entry from storage
-     *
-     * @private
-     * @param {number} id - the id of the ride
-     * @return {void}
-     */
-    private deleteStorageRide(id: number): void {
-        const sRides = this.getAllStorageRides();
-
-        const filteredSRides = sRides.filter((ride) => ride.id !== id);
-
-        this.storage.setValue("rides", filteredSRides);
-    }
-
-    /**
-     * Handles the creation of a ride and all following actions
-     *
-     * @private
-     * @param {number} playerId - the id of the player that has built the ride
-     * @param {number} rideId - the id of the ride
-     * @return {void}
-     */
-    private createRide(playerId: number, rideId: number): void {
-        const {rides, hash, name} = this.playerManager.getPlayer(playerId) ?? {};
-
-        if (!rides || !hash || !name) {
-            return;
-        }
-
-        if (!rides.some((id) => id === rideId)) {
-            rides.push(rideId);
-
-            this.playerManager.updateStoragePlayer(playerId, "rides", rides);
-        }
-
-        this.createRideStorage(hash, rideId);
-        this.setRideName(playerId, name, rideId);
-    }
-
-    /**
-     * Handles the naming of a ride
-     *
-     * @private
-     * @param {number} playerId - the id of the player that has built the ride
-     * @param {string} playerName - the name of the player
-     * @param {number} rideId - the id of the ride
-     * @return {void}
-     */
-    private setRideName(playerId: number, playerName: string, rideId: number): void {
-        const setName = (name: string, num: number): void => {
-            context.executeAction('ridesetname', {
-                ride: rideId,
-                name: `${name} ${num}`
-            }, (result) => {
-                if (result.error === 1 && num < 50) {
-                    setName(name, num + 1);
-                }
-            });
-        };
-
-        if (playerId >= 0 && playerId < network.numPlayers) {
-            const ride = this.getRide(rideId as number);
-            setName(`${playerName} ${ride?.name.replace(/[0-9]/g, '').trim()}`, 1);
-        }
-    }
-
-    /**
-     * Handles the demolishing of a ride and all following actions
-     *
-     * @private
-     * @param {number} id - the id of the ride
-     * @return {void}
-     */
-    private demolishRide(id: number): void {
-        const {playerHash} = this.getStorageRide(id) ?? {};
-
-        if (!playerHash) {
-            return;
-        }
-
-        const {rides, id: playerId} = this.playerManager.getPlayer(playerHash) ?? {};
-
-        if (!rides || !playerId) {
-            return;
-        }
-
-        const filteredRides = rides.filter((ride) => ride !== id);
-
-        // this.players.spendMoney(playerHash, -this.rideProperties[id].previousTotalProfit);
-
-        this.playerManager.updateStoragePlayer(playerId, "rides", filteredRides);
-
-        this.deleteStorageRide(id);
-    }
+    // /**
+    //  * Handles the naming of a ride
+    //  *
+    //  * @private
+    //  * @param {number} playerId - the id of the player that has built the ride
+    //  * @param {string} playerName - the name of the player
+    //  * @param {number} rideId - the id of the ride
+    //  * @return {void}
+    //  */
+    // private setRideName(playerId: number, playerName: string, rideId: number): void {
+    //     const setName = (name: string, num: number): void => {
+    //         context.executeAction('ridesetname', {
+    //             ride: rideId,
+    //             name: `${name} ${num}`
+    //         }, (result) => {
+    //             if (result.error === 1 && num < 50) {
+    //                 setName(name, num + 1);
+    //             }
+    //         });
+    //     };
+    //
+    //     if (playerId >= 0 && playerId < network.numPlayers) {
+    //         const ride = this.getRide(rideId as number);
+    //         setName(`${playerName} ${ride?.name.replace(/[0-9]/g, '').trim()}`, 1);
+    //     }
+    // }
+    //
+    // /**
+    //  * Handles the demolishing of a ride and all following actions
+    //  *
+    //  * @private
+    //  * @param {number} id - the id of the ride
+    //  * @return {void}
+    //  */
+    // private demolishRide(id: number): void {
+    //     const {playerHash} = this.getStorageRide(id) ?? {};
+    //
+    //     if (!playerHash) {
+    //         return;
+    //     }
+    //
+    //     const {rides, id: playerId} = this.playerManager.getPlayer(playerHash) ?? {};
+    //
+    //     if (!rides || !playerId) {
+    //         return;
+    //     }
+    //
+    //     const filteredRides = rides.filter((ride) => ride !== id);
+    //
+    //     // this.players.spendMoney(playerHash, -this.rideProperties[id].previousTotalProfit);
+    //
+    //     this.playerManager.updateStoragePlayer(playerId, "rides", filteredRides);
+    //
+    //     this.deleteStorageRide(id);
+    // }
 
     /**
      * Updates an entry in the storageRides in storage, through a key and value

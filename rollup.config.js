@@ -2,11 +2,14 @@ import resolve from "@rollup/plugin-node-resolve";
 import replace from "@rollup/plugin-replace";
 import terser from "@rollup/plugin-terser";
 import typescript from "@rollup/plugin-typescript";
-import { getConfigHome, getDocumentsFolder } from "platform-folders";
+import {getConfigHome, getDocumentsFolder} from "platform-folders";
+import dotenv from 'dotenv';
 
+dotenv.config();
 
 // Environment variables
 const build = process.env.BUILD || "development";
+const pluginFolderPath = process.env.PLUGIN_FOLDER_PATH || 'OpenRCT2/plugin/'
 const isDev = (build === "development");
 
 /**
@@ -20,18 +23,15 @@ const isDev = (build === "development");
  * > git update-index --no-skip-worktree rollup.config.js
  * ```
  */
-function getOutput()
-{
+function getOutput() {
     if (!isDev)
         return "./dist/CompetitiveMultiplayer.js";
 
-    const pluginPath = "OpenRCT2/plugin/CompetitiveMultiplayer.js";
+    const pluginPath = pluginFolderPath + "CompetitiveMultiplayer.js";
 
-    if (process.platform === "win32")
-    {
+    if (process.platform === "win32") {
         return `${getDocumentsFolder()}/${pluginPath}`;
-    }
-    else // for both Mac and Linux
+    } else // for both Mac and Linux
     {
         return `${getConfigHome()}/${pluginPath}`;
     }
@@ -85,7 +85,7 @@ const config = {
 
             // Useful only for stacktraces:
             keep_fnames: isDev,
-        }),
+        })
     ],
 };
 export default config;

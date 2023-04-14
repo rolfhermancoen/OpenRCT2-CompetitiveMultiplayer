@@ -33,6 +33,7 @@
     "@typescript-eslint/eslint-plugin": "^5.57.1",
     "@typescript-eslint/parser": "^5.57.1",
     "ava": "^5.2.0",
+    "dotenv": "^16.0.3",
     "eslint": "^8.37.0",
     "eslint-plugin-import": "^2.27.5",
     "nodemon": "^2.0.22",
@@ -45,8 +46,7 @@
     "typescript": "^5.0.3"
   },
   "dependencies": {
-    "currency.js": "^2.0.4",
-    "lodash": "^4.17.21"
+    "currency.js": "^2.0.4"
   },
   "ava": {
     "extensions": {

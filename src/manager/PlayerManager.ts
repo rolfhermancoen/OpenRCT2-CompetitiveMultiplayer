@@ -1,6 +1,6 @@
 import {find} from "@utils/array";
 
-import {Storage} from "@services/Storage";
+import {CollectionValue, Storage} from "@services/Storage";
 import {Messenger} from "@services/Messenger";
 import {Logger} from "@services/Logger";
 
@@ -13,46 +13,44 @@ type PlayerManagerOptions = {
 // type NetworkPlayer = Omit<Player, "ipAddress" | "ping" | "moneySpent">;
 
 type SPLayer = {
-    hash: string;
     rides: number[];
     moneySpent: number,
 };
 
-type IPlayer = SPLayer & Pick<Player, "id" | "name" | "group">;
+type IPlayer = SPLayer & Pick<Player, "id" | "name" | "group"> & { hash: string };
+
+type PlayerStorage = {
+    players: SPLayer[]
+};
 
 /**
  * Class representing a manager for all player functionalities.
- * @class
  */
 export class PlayerManager {
     /**
      * messenger used throughout the manager
      * @private
-     * @type {Messenger}
      */
     private messenger: Messenger;
     /**
      * logger used through the manager
      * @private
-     * @type {Logger}
      */
     private logger: Logger;
     /**
      * storage used throughout the manager
      * @private
-     * @type {Storage}
      */
-    private storage: Storage<unknown>;
+    private storage: Storage<PlayerStorage>;
 
     /**
      * Construct a new PlayerManager and checks if none has been instantiated yet, then runs the init function
      *
-     * @public
      * @param {PlayerManagerOptions} options - the options provided when instantiating
      * @return {PlayerManager}
      */
     constructor(options: PlayerManagerOptions) {
-        if(instantiated) {
+        if (instantiated) {
             throw new Error("UtilityManager can only be instantiated once, and needs to be injected into other classes.");
         }
         instantiated = true;
@@ -155,24 +153,24 @@ export class PlayerManager {
         return PlayerManager.parsePlayer(nPlayer, sPlayer);
     }
 
-    /**
-     * Gets the player through the use of a ride id
-     *
-     * @public
-     * @param {number} id - the id of the ride to search the player upon
-     * @return {IPlayer | null}
-     */
-    public getPlayerByRide(id: number): IPlayer | null {
-        const allSPlayers = this.getAllStoragePlayers();
-
-        const {hash} = find(allSPlayers, (sPlayer) => sPlayer.rides.some((ride) => ride == id)) ?? {};
-
-        if (!hash) {
-            return null;
-        }
-
-        return this.getPlayer(hash);
-    }
+    // /**
+    //  * Gets the player through the use of a ride id
+    //  *
+    //  * @public
+    //  * @param {number} id - the id of the ride to search the player upon
+    //  * @return {IPlayer | null}
+    //  */
+    // public getPlayerByRide(id: number): IPlayer | null {
+    //     const allSPlayers = this.getAllStoragePlayers();
+    //
+    //     const {hash} = find(allSPlayers, (sPlayer) => sPlayer.rides.some((ride) => ride == id)) ?? {};
+    //
+    //     if (!hash) {
+    //         return null;
+    //     }
+    //
+    //     return this.getPlayer(hash);
+    // }
 
     /**
      * Gets the player from the network through an id or hash
@@ -206,27 +204,16 @@ export class PlayerManager {
      * @param {string} hash - the hash to find the player
      * @return {SPLayer | null}
      */
-    private getStoragePlayer(hash: string): SPLayer | null {
+    private getStoragePlayer(hash: string): CollectionValue<SPLayer> | null {
         const player = this.storage.getValueFromCollection<SPLayer>("players", hash);
 
-        if(!player) {
+        if (!player) {
             this.logger.warning(`No player found in storage with hash: ${hash}`);
             return null;
         }
 
         this.logger.debug(`getStoragePlayer with hash: ${hash} returns player: ${player}`);
         return player;
-    }
-
-    /**
-     * Gets all player from the storage
-     *
-     * @private
-     * @return {SPLayer[]}
-     */
-    private getAllStoragePlayers(): SPLayer[] {
-        // const sPlayers = this.storage.getAllValuesFromCollection<SPLayer[]>("players");
-        return  [];
     }
 
     /**
@@ -237,55 +224,49 @@ export class PlayerManager {
      * @return {SPLayer}
      */
     private createStoragePlayer(nPlayer: Player): SPLayer {
-        const sPlayers = this.getAllStoragePlayers();
-
-        const storagePlayer = {
-            hash: nPlayer.publicKeyHash,
+        const newStoragePlayer = {
             rides: [],
             moneySpent: 0
         };
 
-        sPlayers.push(storagePlayer);
-        this.storage.setValue("players", sPlayers);
-
-        return storagePlayer;
+        return this.storage.setCollectionValue("players", nPlayer.publicKeyHash, newStoragePlayer);
     }
 
-    /**
-     * Updates an entry in the storagePlayers in storage, through a key and value
-     *
-     * @public
-     * @param {number | string} idOrHash - the id or hash of the player
-     * @param {string} key - the key to store the value
-     * @param {<T>>} value - the value to store
-     * @return {SPLayer | null}
-     */
-    public updateStoragePlayer<T>(idOrHash: number | string, key: string, value: T): SPLayer | null {
-        const {publicKeyHash} = this.getNetworkPlayer(idOrHash) ?? {};
-
-        if (!publicKeyHash) {
-            return null;
-        }
-
-        const sPlayer = this.getStoragePlayer(publicKeyHash);
-
-        if (!sPlayer) {
-            return null;
-        }
-
-        const updatedSPlayer = {
-            ...sPlayer,
-            [key]: value
-        };
-
-        const allSPlayers = this.getAllStoragePlayers();
-        const filteredSPlayers = allSPlayers.filter((sPlayer) => sPlayer.hash !== sPlayer.hash);
-        filteredSPlayers.push(updatedSPlayer);
-
-        this.storage.setValue("players", filteredSPlayers);
-
-        return updatedSPlayer;
-    }
+    // /**
+    //  * Updates an entry in the storagePlayers in storage, through a key and value
+    //  *
+    //  * @public
+    //  * @param {number | string} idOrHash - the id or hash of the player
+    //  * @param {string} key - the key to store the value
+    //  * @param {<T>>} value - the value to store
+    //  * @return {SPLayer | null}
+    //  */
+    // public updateStoragePlayer<T>(idOrHash: number | string, key: string, value: T): SPLayer | null {
+    //     const {publicKeyHash} = this.getNetworkPlayer(idOrHash) ?? {};
+    //
+    //     if (!publicKeyHash) {
+    //         return null;
+    //     }
+    //
+    //     const sPlayer = this.getStoragePlayer(publicKeyHash);
+    //
+    //     if (!sPlayer) {
+    //         return null;
+    //     }
+    //
+    //     const updatedSPlayer = {
+    //         ...sPlayer,
+    //         [key]: value
+    //     };
+    //
+    //     const allSPlayers = this.getAllStoragePlayers();
+    //     const filteredSPlayers = allSPlayers.filter((sPlayer) => sPlayer.hash !== sPlayer.hash);
+    //     filteredSPlayers.push(updatedSPlayer);
+    //
+    //     this.storage.setValue("players", filteredSPlayers);
+    //
+    //     return updatedSPlayer;
+    // }
 
     /**
      * Parses the storagePlayer and storagePlayer to output a pluginRide
@@ -295,15 +276,14 @@ export class PlayerManager {
      * @param {SPLayer} sPlayer - the data from the player in the storage
      * @return {IPlayer}
      */
-    static parsePlayer(nPlayer: Player, sPlayer: SPLayer): IPlayer {
+    static parsePlayer(nPlayer: Player, sPlayer: CollectionValue<SPLayer>): IPlayer {
         return {
             id: nPlayer.id,
             name: nPlayer.name,
             group: nPlayer.group,
-            // commandsRan: nPlayer.commandsRan,
             moneySpent: nPlayer.moneySpent ?? 0,
-            hash: sPlayer.hash,
-            rides: sPlayer.rides
+            hash: sPlayer.key,
+            rides: sPlayer.value.rides
         };
     }
 
