@@ -31,6 +31,9 @@ test.before(() => {
                 }, has(key: string): boolean {
                     return Boolean(storage[`${pluginName}_${key}`]);
                 }, set<T>(key: string, value: T): void {
+                    if(value === undefined) {
+                        delete storage[`${pluginName}_${key}`];
+                    }
                     storage[`${pluginName}_${key}`] = value;
                     return;
                 },

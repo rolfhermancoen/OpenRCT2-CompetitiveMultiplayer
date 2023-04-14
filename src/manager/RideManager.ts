@@ -45,7 +45,7 @@ export class RideManager {
      * @private
      * @type {Storage}
      */
-    private storage: Storage;
+    private storage: Storage<unknown>;
 
     /**
      * Construct a new RideManager and checks if none has been instantiated yet, then runs the init function
