@@ -1,10 +1,6 @@
 import currency from 'currency.js';
-import {PlayerManager} from '@manager/PlayerManager';
-import {RideManager} from '@manager/RideManager';
 
-import {HOOK_TYPE} from "@lib/enum";
-
-import {Messenger} from "@services/Messenger";
+// import {HOOK_TYPE} from "@lib/enum";
 import {Commander} from "@services/Commander";
 import {Cheater} from "@services/Cheater";
 import {Logger} from "@services/Logger";
@@ -12,15 +8,12 @@ import {Logger} from "@services/Logger";
 let instantiated = false;
 
 interface EconomyManagerOptions {
-    messenger: Messenger
     commander: Commander
-    playerManager: PlayerManager
-    rideManager: RideManager
 }
 
-const INITIAL_BALANCE = 200000;
-const CMD_BALANCE = new RegExp('^balance($| )');
-const CMD_BALANCE_SHORT = new RegExp('^bal($| )');
+// const INITIAL_BALANCE = 200000;
+// const CMD_BALANCE = new RegExp('^balance($| )');
+// const CMD_BALANCE_SHORT = new RegExp('^bal($| )');
 // const BUILD_ACTIONS = [
 //     ACTION_TYPE.BANNER_PLACE,
 //     ACTION_TYPE.BANNER_REMOVE,
@@ -52,44 +45,20 @@ const CMD_BALANCE_SHORT = new RegExp('^bal($| )');
 
 /**
  * Class representing a manager for all economy functionalities.
- * @class
  */
 export class EconomyManager {
     /**
-     * messenger service used throughout the manager
-     * @private
-     * @type {Messenger}
-     */
-    messenger: Messenger;
-    /**
      * commander service used to execute commands
-     * @private
-     * @type {Commander}
      */
     commander: Commander;
     /**
      * cheater service used to cheat with
-     * @private
-     * @type {Cheater}
      */
     cheater: Cheater;
-    /**
-     * a manager which allows the EconomyManager to alter and get players
-     * @private
-     * @type {PlayerManager}
-     */
-    playerManager: PlayerManager;
-    /**
-     * a manager which allows the EconomyManager to alter and get rides
-     * @private
-     * @type {RideManager}
-     */
-    rideManager: RideManager;
 
     /**
      * Construct a new EconomyManager and checks if none has been instantiated yet, then runs the init function
      *
-     * @public
      * @param {EconomyManagerOptions} options - the options provided when instantiating
      * @return {EconomyManager}
      */
@@ -99,7 +68,6 @@ export class EconomyManager {
         }
         instantiated = true;
 
-        this.messenger = options.messenger;
         this.commander = options.commander;
 
         const logger = new Logger({
@@ -110,51 +78,48 @@ export class EconomyManager {
             logger,
         });
 
-        this.playerManager = options.playerManager;
-        this.rideManager = options.rideManager;
-        this.init();
+        this._init();
     }
 
     /**
      * Runs functions on initialization
      *
-     * @private
      * @return {void}
      */
-    private init(): void {
-        this.watchNetworkChat();
+    private _init(): void {
+        // this.watchNetworkChat();
         // this.watchActionQuery();
         // this.watchIntervalDay();
     }
 
-    /**
-     * Watches for chatting in the network, and handles them
-     *
-     * @private
-     * @return {void}
-     */
-    private watchNetworkChat(): void {
-        context.subscribe(HOOK_TYPE.NETWORK_CHAT, (event) => {
-            const {message, player} = event;
-            const command = this.commander.getCommand(message);
-
-            if (typeof command === "boolean") {
-                return;
-            }
-
-            let responseMessage: string | null = null;
-
-            if ((this.commander.doesCommandMatch(command, [CMD_BALANCE, CMD_BALANCE_SHORT])) !== false) {
-                responseMessage = `{YELLOW}Your current balance is: {GREEN}${EconomyManager.formatProfit(this.getPlayerBalance(player) ?? 0)}`;
-            }
-
-            if (responseMessage === null) {
-                return;
-            }
-
-            context.setTimeout(() => this.messenger.message(responseMessage as string, player), 100);
-        });
-    }
+    // /**
+    //  * Watches for chatting in the network, and handles them
+    //  *
+    //  * @private
+    //  * @return {void}
+    //  */
+    // private watchNetworkChat(): void {
+    //     context.subscribe(HOOK_TYPE.NETWORK_CHAT, (event) => {
+    //         const {message, player} = event;
+    //         const command = this.commander.getCommand(message);
+    //
+    //         if (typeof command === "boolean") {
+    //             return;
+    //         }
+    //
+    //         let responseMessage: string | null = null;
+    //
+    //         if ((this.commander.doesCommandMatch(command, [CMD_BALANCE, CMD_BALANCE_SHORT])) !== false) {
+    //             responseMessage = `{YELLOW}Your current balance is: {GREEN}${EconomyManager.formatProfit(this.getPlayerBalance(player) ?? 0)}`;
+    //         }
+    //
+    //         if (responseMessage === null) {
+    //             return;
+    //         }
+    //
+    //         context.setTimeout(() => this.messenger.message(responseMessage as string, player), 100);
+    //     });
+    // }
 
     // /**
     //  * Watches for the interval in the days and fires other functions
@@ -248,64 +213,64 @@ export class EconomyManager {
     //     this.messenger.broadcast(message);
     // }
 
-    /**
-     * Gets the players balance of a player
-     *
-     * @private
-     * @param {number} id - id of the player
-     * @return {number | null}
-     */
-    private getPlayerBalance(id: number): number | null {
-        const player = this.playerManager.getPlayer(id);
+    // /**
+    //  * Gets the players balance of a player
+    //  *
+    //  * @private
+    //  * @param {number} id - id of the player
+    //  * @return {number | null}
+    //  */
+    // private getPlayerBalance(id: number): number | null {
+    //     const player = this.playerManager.getPlayer(id);
+    //
+    //     if (!player) {
+    //         return null;
+    //     }
+    //
+    //     const playerProfit = this.getPlayerProfit(id);
+    //
+    //     return INITIAL_BALANCE - player.moneySpent + (playerProfit !== null ? playerProfit : 0);
+    // }
+    //
+    // /**
+    //  * Gets the players profit of a player
+    //  *
+    //  * @private
+    //  * @param {number} id - id of the player
+    //  * @return {number | null}
+    //  */
+    // private getPlayerProfit(id: number): number | null {
+    //     const player = this.playerManager.getPlayer(id);
+    //
+    //     if (!player) {
+    //         return null;
+    //     }
+    //
+    //     let profit = 0;
+    //     for (const rideID of player.rides) {
+    //         const rideProfit = this.getRideProfit(rideID);
+    //         profit += (rideProfit !== null ? rideProfit : 0);
+    //     }
+    //     return profit;
+    //
+    // }
 
-        if (!player) {
-            return null;
-        }
-
-        const playerProfit = this.getPlayerProfit(id);
-
-        return INITIAL_BALANCE - player.moneySpent + (playerProfit !== null ? playerProfit : 0);
-    }
-
-    /**
-     * Gets the players profit of a player
-     *
-     * @private
-     * @param {number} id - id of the player
-     * @return {number | null}
-     */
-    private getPlayerProfit(id: number): number | null {
-        const player = this.playerManager.getPlayer(id);
-
-        if (!player) {
-            return null;
-        }
-
-        let profit = 0;
-        for (const rideID of player.rides) {
-            const rideProfit = this.getRideProfit(rideID);
-            profit += (rideProfit !== null ? rideProfit : 0);
-        }
-        return profit;
-
-    }
-
-    /**
-     * Gets the profit of a ride
-     *
-     * @private
-     * @param {number} id - id of the ride
-     * @return {number | null}
-     */
-    private getRideProfit(id: number): number | null {
-        const {totalProfit, type} = this.rideManager.getRide(id) ?? {};
-
-        if (totalProfit === undefined || !type) {
-            return null;
-        }
-
-        return Math.max(totalProfit, (type === 36) ? 0 : totalProfit);
-    }
+    // /**
+    //  * Gets the profit of a ride
+    //  *
+    //  * @private
+    //  * @param {number} id - id of the ride
+    //  * @return {number | null}
+    //  */
+    // private getRideProfit(id: number): number | null {
+    //     const {totalProfit, type} = this.rideManager.getRide(id) ?? {};
+    //
+    //     if (totalProfit === undefined || !type) {
+    //         return null;
+    //     }
+    //
+    //     return Math.max(totalProfit, (type === 36) ? 0 : totalProfit);
+    // }
     //
     // /**
     //  * Gets the profit difference based on the previousTotalProfit in the rideStorage object
@@ -357,7 +322,6 @@ export class EconomyManager {
     /**
      * Formats a number to better reflect the in-game display of currency
      *
-     * @static
      * @param {number} profit - the number to format
      * @return {string}
      */

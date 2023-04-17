@@ -14,7 +14,7 @@ const combineObject = (objectA: Record<string, unknown>, objectB: Record<string,
  * @param {Record<string, unknown>} objectA The first object to merge
  * @param {Record<string, unknown>} objectB The second object to merge
  */
-export const combine = <T extends Record<string, unknown>>(objectA: Record<string, unknown>, objectB: Record<string, unknown>): T => {
+export const combine = <T extends {[K in keyof T]?: T[K]}>(objectA: {[K in keyof T]?: T[K]}, objectB: {[K in keyof T]?: T[K]}): T => {
     const combined = {};
     combineObject(objectA, combined);
     combineObject(objectB, combined);

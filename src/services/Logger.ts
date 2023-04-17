@@ -34,14 +34,11 @@ type LoggerOptions = {
 export class Logger {
     /**
      * name used for prefixing the logs
-     * @private
-     * @type {name | undefined}
      */
     private readonly name: string | undefined;
     /**
      * Construct a new Logger
      *
-     * @public
      */
     constructor(options: LoggerOptions) {
         this.name = options.name;
@@ -49,12 +46,11 @@ export class Logger {
     /**
      * Prints a message with the specified logging and plugin identifier.
      *
-     * @public
      * @param {LogLevel} level - the level of logging
      * @param {unknown[]} messages - the messages to print
      * @return {void}
      */
-    private print(level: LogLevel, messages: unknown[]): void
+    private _print(level: LogLevel, messages: unknown[]): void
     {
         console.log(`<CM/${this.name ?? "Unknown"}/${level}> ${messages.join(" ")}`);
     }
@@ -62,7 +58,6 @@ export class Logger {
     /**
      * Prints a debug message if the plugin is run in development mode.
      *
-     * @public
      * @param {...unknown[]} messages - the messages to print
      * @return {void}
      */
@@ -70,20 +65,19 @@ export class Logger {
     {
         if (Environment.isDevelopment)
         {
-            this.print("debug", messages);
+            this._print("debug", messages);
         }
     }
 
     /**
      * Prints a warning message to the console.
      *
-     * @public
      * @param {...unknown[]} messages - the messages to print
      * @return {void}
      */
     public warning(...messages: unknown[]): void
     {
-        this.print("warning", messages);
+        this._print("warning", messages);
     }
 
 
@@ -91,7 +85,6 @@ export class Logger {
      * Prints an error message to the console and an additional stacktrace
      * if the plugin is run in development mode.
      *
-     * @public
      * @param {...unknown[]} messages - the messages to print
      * @return {void}
      */
@@ -101,7 +94,7 @@ export class Logger {
         {
             messages.push(`\r\n${Logger.stacktrace()}`);
         }
-        this.print("error", messages);
+        this._print("error", messages);
     }
 
 
@@ -109,7 +102,6 @@ export class Logger {
      * Prints an error message to the console and an additional stacktrace
      * if the assert fails and the plugin is run in development mode.
      *
-     * @public
      * @param {boolean} condition - the condition to assert
      * @param {...unknown[]} messages - the messages to print
      * @return {void}
@@ -126,7 +118,6 @@ export class Logger {
     /**
      * Returns the current call stack as a string.
      *
-     * @static
      * @return {string}
      */
     static stacktrace(): string

@@ -1,27 +1,22 @@
 import {ACTION_TYPE} from "@lib/enum";
 import {Logger} from "@services/Logger";
 
-
 type CheaterOptions = {
     logger: Logger
 };
 
 /**
  * Class representing a way to use cheats.
- * @class
  */
 export class Cheater {
     /**
      * logger used through the manager
-     * @private
-     * @type {Logger}
      */
     private logger: Logger;
 
     /**
      * Construct a new Cheater
      *
-     * @public
      */
     constructor(options: CheaterOptions) {
         this.logger = options.logger;
@@ -30,7 +25,6 @@ export class Cheater {
     /**
      * Sets a cheat based on multiple parameters
      *
-     * @public
      * @param {number} type - The message to send
      * @param {string} [param1=1] - An optional parameter
      * @param {string} [param2=0] - An optional parameter
@@ -44,16 +38,5 @@ export class Cheater {
             param1,
             param2
         });
-    }
-
-    /**
-     * Checks if a cheat is enabled
-     *
-     * @public
-     * @param {keyof Cheats} cheat - The cheat to validate
-     * @return {boolean}
-     */
-    public isEnabled(cheat: keyof Cheats): boolean {
-        return cheats[cheat as keyof Cheats];
     }
 }

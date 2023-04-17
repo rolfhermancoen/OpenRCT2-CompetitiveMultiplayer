@@ -4,13 +4,11 @@ let instantiated = false;
 
 /**
  * Class representing a way to use commands.
- * @class
  */
 export class Commander {
     /**
      * Construct a new Commander and checks if none has been instantiated yet
      *
-     * @public
      */
     constructor() {
         if(instantiated) {
@@ -22,7 +20,6 @@ export class Commander {
     /**
      * Gets the command by trimming the string
      *
-     * @public
      * @param {string} string - The string to use
      * @return {string | boolean}
      */
@@ -37,7 +34,6 @@ export class Commander {
     /**
      * Checks if a command matches an array of commands
      *
-     * @public
      * @param {string} string - The string to test
      * @param {RegExp[]} commands - An array of commands to test
      * @return {boolean | string}
