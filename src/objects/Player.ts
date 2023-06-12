@@ -69,6 +69,10 @@ export class IPlayer {
         return true;
     }
 
+    public get id(): number {
+        return this._id;
+    }
+
     public player(): Player & SPlayer | null {
         if (!this._networkPlayerObj || !this._storagePlayerObj) {
             return null;

@@ -9,23 +9,6 @@ export enum TILE_ELEMENT_TYPE {
     BANNER = "banner"
 }
 
-export enum HOOK_TYPE {
-    ACTION_QUERY = "action.query",
-    ACTION_EXECUTE = "action.execute",
-    INTERVAL_TICK = "interval.tick",
-    INTERVAL_DAY = "interval.day",
-    NETWORK_CHAT = "network.chat",
-    NETWORK_ACTION = "network.action",
-    NETWORK_JOIN = "network.join",
-    NETWORK_LEAVE = "network.leave",
-    RIDE_RATINGS_CALCULATE = "ride.ratings.calculate",
-    ACTION_LOCATION = "action.location",
-    VEHICLE_CRASH = "vehicle.crash",
-    MAP_CHANGE = "map.change",
-    MAP_CHANGED = "map.changed",
-    MAP_SAVE = "map.save"
-}
-
 export enum ACTION_TYPE {
     BALLOON_PRESS = "balloonpress",
     BANNER_PLACE = "bannerplace",
