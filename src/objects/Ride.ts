@@ -1,7 +1,7 @@
 import { isNumber } from "@utils/type";
 import { find } from "@utils/array";
 import { combine } from "@utils/object";
-import { Storage } from "@services/Storage";
+import { Storage } from "@services/storage";
 import { IPlayer } from "@src/objects/player";
 import { debug, error, warning } from "@src/utils/logger";
 import { executeAction } from "@src/services/action";
@@ -33,6 +33,7 @@ export const createIRideById = (id?: number): IRide | undefined => {
 
 const storage = new Storage({
   name: "IRide",
+  type: "park",
 });
 
 /**

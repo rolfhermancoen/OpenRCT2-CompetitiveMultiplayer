@@ -1,13 +1,12 @@
 import { debug } from "@src/utils/logger";
-import { RIDE_CREATE, RIDE_DEMOLISH } from "./actions";
 import {
-  ACTION_EXECUTE,
-  NETWORK_JOIN,
+  GameActionEventWithArgs,
   subscribe,
-  NetworkEventArguments,
-  NETWORK_LEAVE,
-  GameActionEvent,
-} from "./subscribeold";
+  subscribeActionQuery,
+} from "./subscribe";
+import { NETWORK_JOIN, NETWORK_LEAVE } from "./subscribe/enum";
+import { NetworkEvent } from "./subscribe/types";
+import { RIDE_CREATE, RIDE_DEMOLISH } from "./action/enum";
 
 /**
  *
@@ -15,12 +14,12 @@ import {
  * @returns
  */
 export const watchForNetworkJoin = (
-  callback: (e: NetworkEventArguments) => void
+  callback: (e: NetworkEvent) => void
 ): IDisposable => {
-  return subscribe(NETWORK_JOIN, null, (event) => {
+  return subscribe(NETWORK_JOIN, (event) => {
     // player.welcome();
     debug(
-      `[interactions] watchForNetworkJoin(): player joined with id: ${event.player.id}`
+      `[interactions] watchForNetworkJoin(): player joined with id: ${event.player?.id}`
     );
     callback(event);
   });
@@ -32,12 +31,12 @@ export const watchForNetworkJoin = (
  * @returns
  */
 export const watchForNetworkLeave = (
-  callback: (e: NetworkEventArguments) => void
+  callback: (e: NetworkEvent) => void
 ): IDisposable => {
-  return subscribe(NETWORK_LEAVE, null, (event) => {
+  return subscribe(NETWORK_LEAVE, (event) => {
     // player.leave();
     debug(
-      `[interactions] watchForNetworkLeave(): player left with id: ${event.player.id}`
+      `[interactions] watchForNetworkLeave(): player left with id: ${event.player?.id}`
     );
     callback(event);
   });
@@ -49,16 +48,16 @@ export const watchForNetworkLeave = (
  * @returns
  */
 export const watchForRideCreate = (
-  callback: (e: GameActionEvent<typeof RIDE_CREATE>) => void
+  callback: (e: GameActionEventWithArgs<typeof RIDE_CREATE>) => void
 ): IDisposable => {
-  return subscribe(ACTION_EXECUTE, RIDE_CREATE, (event) => {
+  return subscribeActionQuery(RIDE_CREATE, (event) => {
     if (event.player?.isServer()) {
       return;
     }
 
     debug(
       `[interactions] watchForRideCreate(): ride created with id: ${
-        event.ride?.id ?? "-"
+        event.args.rideObject ?? "-"
       }`
     );
     callback(event);
@@ -71,15 +70,15 @@ export const watchForRideCreate = (
  * @returns
  */
 export const watchForRideDemolish = (
-  callback: (e: GameActionEvent<typeof RIDE_DEMOLISH>) => void
+  callback: (e: GameActionEventWithArgs<typeof RIDE_DEMOLISH>) => void
 ): IDisposable => {
-  return subscribe(ACTION_EXECUTE, RIDE_DEMOLISH, (event) => {
+  return subscribeActionQuery(RIDE_DEMOLISH, (event) => {
     if (event.player?.isServer()) {
       return;
     }
-    if (event.ride) {
+    if (event.args.ride) {
       debug(
-        `[interactions] watchForRideCreate(): ride demolished with id: ${event.ride.id}`
+        `[interactions] watchForRideCreate(): ride demolished with id: ${event.args.ride}`
       );
       callback(event);
     }

@@ -238,7 +238,7 @@ export const subscribe = <H extends HOOK_TYPE>(
   });
 };
 
-type GameActionEventWithArgs<A extends ACTION_TYPE> = {
+export type GameActionEventWithArgs<A extends ACTION_TYPE> = {
   args: Args<A>;
 } & Omit<GameActionEvent, "args">;
 

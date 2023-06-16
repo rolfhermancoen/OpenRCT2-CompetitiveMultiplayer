@@ -21,7 +21,7 @@ export type GameActionError = {
 };
 
 export type GameActionEvent<T = object> = {
-  readonly player?: ParkSetResearchFundingArgs;
+  readonly player?: IPlayer;
   readonly type: number;
   readonly action: string;
   readonly isClientOnly: boolean;
@@ -30,7 +30,7 @@ export type GameActionEvent<T = object> = {
   setError: (error: GameActionError) => void;
 };
 
-type NetworkEvent = {
+export type NetworkEvent = {
   readonly player?: IPlayer;
 };
 

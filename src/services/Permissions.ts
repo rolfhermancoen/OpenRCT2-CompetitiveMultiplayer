@@ -1,5 +1,8 @@
 import { watchForRideCreate } from "./interactions";
-import { ACTION_QUERY, subscribe } from "./subscribeold";
+import { warning } from "@src/utils/logger";
+import { message } from "@src/utils/message";
+import { subscribe } from "./subscribe";
+import { ACTION_QUERY } from "./subscribe/enum";
 import {
   ACTION_TYPE,
   LAND_BUY_RIGHTS,
@@ -9,9 +12,7 @@ import {
   PARK_SET_NAME,
   PARK_SET_PARAMETER,
   PARK_SET_RESEARCH_FUNDING,
-} from "./actions";
-import { warning } from "@src/utils/logger";
-import { message } from "@src/utils/message";
+} from "./action/enum";
 
 const RESTRICTED_ACTIONS = [
   PARK_SET_PARAMETER,
@@ -24,10 +25,10 @@ const RESTRICTED_ACTIONS = [
 ];
 
 /**
- * 
+ *
  */
 export const restrictActions = (): void => {
-  subscribe(ACTION_QUERY, null, (event) => {
+  subscribe(ACTION_QUERY, (event) => {
     const { action, player } = event;
     if (!player || player.isServer() || player.isAdmin()) {
       return;
@@ -54,39 +55,39 @@ export const restrictActions = (): void => {
 };
 
 /**
- * 
+ *
  */
-export const restrictRideActions = (): void => {
-  subscribe(ACTION_QUERY, null, (event) => {
-    const { ride, player } = event;
-    if (!ride || !player || player.isServer() || player.isAdmin()) {
-      return;
-    }
+// export const restrictRideActions = (): void => {
+//   subscribe(ACTION_QUERY, (event) => {
+//     const { player } = event;
+//     if (!("ride" in event.args) || !player || player.isServer() || player.isAdmin()) {
+//       return;
+//     }
 
-    if (player.isRideOwner(ride)) {
-      return;
-    }
+//     if (player.isRideOwner(event.args.ride as)) {
+//       return;
+//     }
 
-    event.result = {
-      error: 1,
-      errorTitle: "NOT OWNED",
-      errorMessage: "That ride belongs to another player.",
-    };
+//     event.result = {
+//       error: 1,
+//       errorTitle: "NOT OWNED",
+//       errorMessage: "That ride belongs to another player.",
+//     };
 
-    warning(
-      `${player.networkPlayer().name} tried a ride action: ${
-        event.action
-      }, on a ride that is not theirs.`
-    );
-    message(
-      "{RED}ERROR: {WHITE}That ride/stall doesn't belong to you!",
-      player.networkPlayer().id
-    );
-  });
-};
+//     warning(
+//       `${player.networkPlayer().name} tried a ride action: ${
+//         event.action
+//       }, on a ride that is not theirs.`
+//     );
+//     message(
+//       "{RED}ERROR: {WHITE}That ride/stall doesn't belong to you!",
+//       player.networkPlayer().id
+//     );
+//   });
+// };
 
 /**
- * 
+ *
  */
 export const disableTrackDesigns = (): void => {
   watchForRideCreate((event) => {

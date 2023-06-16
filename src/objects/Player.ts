@@ -2,7 +2,7 @@ import { isNumber } from "@utils/type";
 
 import { find } from "@utils/array";
 import { combine } from "@utils/object";
-import { Storage } from "@services/Storage";
+import { Storage } from "@services/storage";
 import { messageOnConnect } from "@utils/message";
 import { IRide } from "@src/objects/ride";
 import { debug, error, warning } from "@src/utils/logger";
@@ -40,6 +40,7 @@ export const createIPlayerById = (id: number): IPlayer | undefined => {
 
 const storage = new Storage({
   name: "IPlayer",
+  type: "park",
 });
 
 /**
