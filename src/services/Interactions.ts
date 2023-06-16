@@ -1,58 +1,108 @@
-import { ACTION_TYPE } from "@lib/enum";
-import { ACTION_EXECUTE, contextSubscribe } from "./Context";
-
-let instantiated = false;
+import { debug } from "@src/utils/logger";
+import { RIDE_CREATE, RIDE_DEMOLISH } from "./actions";
+import {
+  ACTION_EXECUTE,
+  NETWORK_JOIN,
+  subscribe,
+  NetworkEventArguments,
+  NETWORK_LEAVE,
+  GameActionEvent,
+} from "./subscribeold";
 
 /**
- * Used for all things in regards to the interactions of the players
+ *
+ * @param callback
+ * @returns
  */
-export class Interactions {
-  /**
-   * Construct a new Interactions and checks if none has been instantiated yet, then runs the init function
-   *
-   * @return {Interactions}
-   */
-  constructor() {
-    if (instantiated) {
-      throw new Error(
-        "UtilityManager can only be instantiated once, and needs to be injected into other classes."
-      );
+export const watchForNetworkJoin = (
+  callback: (e: NetworkEventArguments) => void
+): IDisposable => {
+  return subscribe(NETWORK_JOIN, null, (event) => {
+    // player.welcome();
+    debug(
+      `[interactions] watchForNetworkJoin(): player joined with id: ${event.player.id}`
+    );
+    callback(event);
+  });
+};
+
+/**
+ *
+ * @param callback
+ * @returns
+ */
+export const watchForNetworkLeave = (
+  callback: (e: NetworkEventArguments) => void
+): IDisposable => {
+  return subscribe(NETWORK_LEAVE, null, (event) => {
+    // player.leave();
+    debug(
+      `[interactions] watchForNetworkLeave(): player left with id: ${event.player.id}`
+    );
+    callback(event);
+  });
+};
+
+/**
+ *
+ * @param callback
+ * @returns
+ */
+export const watchForRideCreate = (
+  callback: (e: GameActionEvent<typeof RIDE_CREATE>) => void
+): IDisposable => {
+  return subscribe(ACTION_EXECUTE, RIDE_CREATE, (event) => {
+    if (event.player?.isServer()) {
+      return;
     }
-    instantiated = true;
-    this._init();
-  }
 
-  /**
-   * Initialization of the different subscriptions on the network
-   *
-   * @return {void}
-   */
-  private _init(): void {
-    this._subscribeToActionExecute();
-  }
+    debug(
+      `[interactions] watchForRideCreate(): ride created with id: ${
+        event.ride?.id ?? "-"
+      }`
+    );
+    callback(event);
+  });
+};
 
-  /**
-   * Watches for actions made by the player and handles them accordingly
-   *
-   * @return {void}
-   */
-  private _subscribeToActionExecute(): void {
-    contextSubscribe(ACTION_EXECUTE, ({ player, ride, action }) => {
-      if (player.isServer()) {
-        return;
-      }
+/**
+ *
+ * @param callback
+ * @returns
+ */
+export const watchForRideDemolish = (
+  callback: (e: GameActionEvent<typeof RIDE_DEMOLISH>) => void
+): IDisposable => {
+  return subscribe(ACTION_EXECUTE, RIDE_DEMOLISH, (event) => {
+    if (event.player?.isServer()) {
+      return;
+    }
+    if (event.ride) {
+      debug(
+        `[interactions] watchForRideCreate(): ride demolished with id: ${event.ride.id}`
+      );
+      callback(event);
+    }
+  });
+};
 
-      if (action === ACTION_TYPE.RIDE_CREATE && ride) {
-        player.addRideToPlayer(ride);
-        ride.setName(player);
-        return;
-      }
+// OLD FUCNTION NEEDS TO MOVE
+// private _subscribeToActionExecute(): void {
+//     subscribe(ACTION_EXECUTE, ({ player, ride, action }) => {
+//       if (player.isServer()) {
+//         return;
+//       }
 
-      if (action === ACTION_TYPE.RIDE_DEMOLISH && ride) {
-        player.deleteRideFromPlayer(ride);
-        ride.delete();
-        return;
-      }
-    });
-  }
-}
+//       if (action === RIDE_CREATE && ride) {
+//         player.addRideToPlayer(ride);
+//         ride.setName(player);
+//         return;
+//       }
+
+//       if (action === RIDE_DEMOLISH && ride) {
+//         player.deleteRideFromPlayer(ride);
+//         ride.delete();
+//         return;
+//       }
+//     });
+//   }

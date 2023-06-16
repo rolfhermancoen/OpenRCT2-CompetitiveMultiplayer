@@ -1,4 +1,4 @@
-import {Logger} from "@services/Logger";
+import { debug, warning } from "@src/utils/logger";
 import {combine} from "@utils/object";
 
 type StorageType = "park" | "shared";
@@ -32,12 +32,6 @@ export class Storage<T> {
      * storage used throughout the class
      */
     private readonly storage: Configuration;
-
-    /**
-     * logger used in storage
-     */
-    private readonly logger: Logger;
-
     /**
      * Construct a new storage
      *
@@ -52,9 +46,6 @@ export class Storage<T> {
 
 
         this.name = options.name;
-        this.logger = new Logger({
-            name: `Storage_${this.name}`
-        });
 
 
         this.storage = this.storageType === "shared" ? context.sharedStorage : context.getParkStorage();
@@ -70,7 +61,7 @@ export class Storage<T> {
      * @return {string} - The name of the storage
      */
     public getStorageName(): string {
-        this.logger.debug(`[getStorageName] ${this.name}`);
+        debug(`[getStorageName] ${this.name}`);
         return this.name;
     }
 
@@ -78,7 +69,7 @@ export class Storage<T> {
      *
      */
     public getStorageType(): StorageType {
-        this.logger.debug(`[getStorageType] ${this.storageType}`);
+        debug(`[getStorageType] ${this.storageType}`);
         return this.storageType;
     }
 
@@ -106,7 +97,7 @@ export class Storage<T> {
      */
     public setValue<T>(key: string, value: Value<T>): Value<T> {
         this.storage.set(this.addPrefix(key), value);
-        this.logger.debug(`[setValue] ${key} with value: ${value}`);
+        debug(`[setValue] ${key} with value: ${value}`);
         return value;
     }
 
@@ -119,7 +110,7 @@ export class Storage<T> {
      */
     public getValue<T>(key: string, defaultValue?: Value<T>): Value<T> | undefined {
         const value = defaultValue ? this.storage.get<T>(this.addPrefix(key), defaultValue) : this.storage.get<T>(this.addPrefix(key));
-        this.logger.debug(`[getValue] ${key}, ${defaultValue ? `with defaultValue: ${defaultValue},` : ''} results: ${value}`);
+        debug(`[getValue] ${key}, ${defaultValue ? `with defaultValue: ${defaultValue},` : ''} results: ${value}`);
         return value;
     }
 
@@ -131,11 +122,11 @@ export class Storage<T> {
      */
     public deleteValue(key: string): boolean {
         if (this.isValueSet(key)) {
-            this.logger.debug(`[deleteValue] ${key}`);
+            debug(`[deleteValue] ${key}`);
             this.storage.set(this.addPrefix(key), undefined);
             return true;
         } else {
-            this.logger.debug(`[deleteValue] ${key} not found, no value deleted`);
+            debug(`[deleteValue] ${key} not found, no value deleted`);
             return false;
         }
     }
@@ -148,7 +139,7 @@ export class Storage<T> {
      */
     public isValueSet(key: string): boolean {
         const hasValue = this.storage.has(this.addPrefix(key));
-        this.logger.debug(`[isValueSet] ${key}, results ${hasValue}`);
+        debug(`[isValueSet] ${key}, results ${hasValue}`);
         return hasValue;
     }
 
@@ -167,7 +158,7 @@ export class Storage<T> {
      */
     public setCollection<T>(collection: string, values: Collection<T>): Collection<T> {
         const valueObject = this.setCollectionValues(collection, values);
-        this.logger.debug(`[setCollection]key ${collection} with values: ${values}`);
+        debug(`[setCollection]key ${collection} with values: ${values}`);
         return valueObject;
     }
 
@@ -181,7 +172,7 @@ export class Storage<T> {
      * @return {<T> | undefined} - the value that was set
      */
     public setCollectionValue<T>(collection: string, key: string, value: T): Value<T> {
-        this.logger.debug(`[setCollectionValue], collection: ${collection}, key: ${key}, value: ${value}.`);
+        debug(`[setCollectionValue], collection: ${collection}, key: ${key}, value: ${value}.`);
         return this.setValue<T>(this.concatKeys(collection, key), value);
     }
 
@@ -194,7 +185,7 @@ export class Storage<T> {
      * @return {Collection} - the values that were set
      */
     public setCollectionValues<T>(collection: string, values: Collection<T>): Collection<T> {
-        this.logger.debug(`[setCollectionValues] collection: ${collection}, values: ${values}`);
+        debug(`[setCollectionValues] collection: ${collection}, values: ${values}`);
         for (let i = 0; i < values.length; i++) {
             this.setCollectionValue(collection, values[i].key, values[i].value);
         }
@@ -211,11 +202,11 @@ export class Storage<T> {
         const valueObject = this.storage.getAll(this.addPrefix(collection));
 
         if (!valueObject || Object.keys(valueObject).length === 0) {
-            this.logger.warning(`No values found with collection key: ${collection}`);
+            warning(`No values found with collection key: ${collection}`);
             return undefined;
         }
 
-        this.logger.debug(`[getCollection], with key: ${collection}, results: ${valueObject}`);
+        debug(`[getCollection], with key: ${collection}, results: ${valueObject}`);
         const collectionArray = this.parseValueObjectIntoCollection(valueObject);
 
         if (collectionArray.length === 0) {
@@ -233,7 +224,7 @@ export class Storage<T> {
      */
     public getValueFromCollection<T>(collection: string, key: string): CollectionValue<T> | undefined {
         const value = this.getValue<T>(this.concatKeys(collection, key));
-        this.logger.debug(`[getValueFromCollection], collection: ${collection}, key: ${key}.`);
+        debug(`[getValueFromCollection], collection: ${collection}, key: ${key}.`);
 
         if (!value) {
             return undefined;
@@ -257,7 +248,7 @@ export class Storage<T> {
         for (let i = 0; i < collectionValues.length; i++) {
             this.deleteValue(this.concatKeys(collection, collectionValues[i].key));
         }
-        this.logger.debug(`[deleteCollection] ${collection} deleted, with ${collectionValues.length} values.`);
+        debug(`[deleteCollection] ${collection} deleted, with ${collectionValues.length} values.`);
         return true;
     }
 
@@ -269,7 +260,7 @@ export class Storage<T> {
      */
     public deleteCollectionValue(collection: string, key: string): boolean {
         const deleted = this.deleteValue(this.concatKeys(collection, key));
-        this.logger.debug(`[deleteCollectionValue] ${collection} ${key}: ${deleted}`);
+        debug(`[deleteCollectionValue] ${collection} ${key}: ${deleted}`);
         return deleted;
     }
 
@@ -284,7 +275,7 @@ export class Storage<T> {
      */
     public addPrefix(key: string): string {
         const prefixed = `${this.getStorageName()}_${key}`;
-        this.logger.debug(`[addPrefix]: prefix: ${this.getStorageName()}, subKey: ${key}, result: ${prefixed}`);
+        debug(`[addPrefix]: prefix: ${this.getStorageName()}, subKey: ${key}, result: ${prefixed}`);
         return prefixed;
     }
 
@@ -297,7 +288,7 @@ export class Storage<T> {
      */
     public concatKeys(key: string, subKey: string): string {
         const concatKeys = `${key}_${subKey}`;
-        this.logger.debug(`[concatKeys]: key: ${key}, subKey: ${subKey}, result: ${concatKeys}`);
+        debug(`[concatKeys]: key: ${key}, subKey: ${subKey}, result: ${concatKeys}`);
         return concatKeys;
     }
 
@@ -315,7 +306,7 @@ export class Storage<T> {
                 key: key.split("_").pop() as string
             };
         }).filter((entry) => entry.value !== undefined);
-        this.logger.debug(`[parseValueObjectIntoCollection] object: ${object}, array ${array}`);
+        debug(`[parseValueObjectIntoCollection] object: ${object}, array ${array}`);
         return array;
     }
 }
